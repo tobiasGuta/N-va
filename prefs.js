@@ -62,7 +62,16 @@ export default class NovaPreferences extends ExtensionPreferences {
                 digits: 0,
             });
             appearance.add(row);
-            settings.bind(key, row, 'value', Gio.SettingsBindFlags.DEFAULT);
+            row.connect('notify::value', () => {
+                const next = Math.round(row.value);
+                if (settings.get_int(key) !== next)
+                    settings.set_int(key, next);
+            });
+            settings.connect(`changed::${key}`, () => {
+                const next = settings.get_int(key);
+                if (Math.round(row.value) !== next)
+                    row.value = next;
+            });
         }
 
         const color = new Adw.EntryRow({

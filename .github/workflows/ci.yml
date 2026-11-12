@@ -14,3 +14,5 @@ jobs:
           node-version: '22'
       - name: Syntax and logic tests
         run: npm run check
+      - name: Check GSettings schema
+        run: glib-compile-schemas --strict --dry-run schemas

@@ -552,11 +552,17 @@ export default class NovaExtension extends Extension {
             ));
             this._activityStop.visible = activity.kind === 'timer';
             const hasPercent = Number.isFinite(activity.percent);
-            this._activityProgress.visible = hasPercent;
-            if (hasPercent)
+            this._activityProgress.visible =
+                hasPercent || activity.kind === 'download';
+            if (hasPercent) {
                 this._activityBarFill.width = Math.round(
                     Math.max(0, Math.min(100, activity.percent)) * 2.25
                 );
+            } else if (activity.kind === 'download') {
+                // A small indeterminate bar; the text shows actual received
+                // bytes, never a fabricated percentage.
+                this._activityBarFill.width = 52;
+            }
         } else {
             this._compactText.text = playing
                 ? clipped(this._playerState?.title ?? '', 17)

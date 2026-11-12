@@ -2,9 +2,9 @@
 
 **A tiny Dynamic Island for GNOME. No AI, no background daemon, no Electron.**
 
-Nova is an early-stage GNOME Shell extension with a compact clock and calendar by default. When an MPRIS player actively plays audio/video, it switches to a music island. Hover to expand; PIN to keep it open.
+Nova is an early-stage GNOME Shell extension with a compact clock and calendar by default. When an MPRIS player actively plays audio/video, it switches to a music island. Hover to expand; use the discreet pin icon to keep it open.
 
-## Features in v0.4
+## Features in v0.5
 
 - Compact, centered black pill fitted to the GNOME panel height, with smooth expand/collapse and content fade-in.
 - Default compact clock with local time and weekday; expanded month-view calendar with navigation.
@@ -15,12 +15,18 @@ Nova is an early-stage GNOME Shell extension with a compact clock and calendar b
 - Animated playback bars in both compact and expanded media views; a decorative activity indicator rather than a live audio spectrum.
 - Gentle cross-fades as Nova morphs from the calendar to music and back.
 - Play/pause, previous and next buttons (when the player supports them).
-- Hover to expand; use the PIN button to keep Nova open while using other apps; close to collapse.
+- Hover to expand; use an icon-only pin button to keep Nova open while using other apps; close to collapse.
+- Countdown timers (5, 15, or 25 minutes) launched from the calendar and shown as live activities.
+- Brief notification previews mirrored from GNOME’s Message Tray, without suppressing native banners.
+- Automatic volume indicators from GNOME Quick Settings and brightness indicators from Mutter backlight.
+- GNOME built-in screencast activity with elapsed time.
+- Download previews from the default Downloads folder, including received byte counts for browser partial files (not total percentages).
+- Native settings window for sizes, accent color, animation duration, floating bar, and individual activity toggles.
 - Automatically discovers MPRIS players and follows playback changes.
 - Restores the original GNOME center clock when disabled.
 - Respects GNOME 51 reduced-motion preference; no AI or subprocesses. Optional HTTPS requests occur only for remote cover art during playback.
 
-**Status:** Early development release. Source targets GNOME Shell 49–51; automated tests pass, but the transparent panel and calendar still need runtime testing on Fedora. The calendar shows the local month (not appointments or notification events). Notification previews are not implemented yet. The new artwork and animations also need verification on Fedora.
+**Status:** Experimental release targeting GNOME Shell 49–51. The new activities and preferences use GNOME APIs that may vary with Fedora/desktop extensions and need live Fedora testing. The calendar is local-only (no appointments). Nova mirrors notifications rather than replacing the native banner.
 
 ## Install on Fedora GNOME
 
@@ -81,17 +87,32 @@ playerctl metadata
 
 `playerctl` is **not** a Nova runtime dependency.
 
+## Preferences
+
+Open **Extensions → Nova → Preferences**, or run:
+
+```bash
+gnome-extensions prefs nova@tobiasguta.github.io
+```
+
+Adjust the compact/expanded widths, accent color (hex `#RRGGBB`), animation speed, floating top bar, and individual activity features. The installer now compiles an extension-local GSettings schema. If you install manually, include `prefs.js` and the `schemas/` directory.
+
+## Live activity coverage
+
+- **Timer:** Start a 5-, 15-, or 25-minute countdown in the expanded calendar. It remains visible until stopped or finished.
+- **Notifications:** Preview notification titles from GNOME's existing Message Tray; the normal banner is still shown. Notification contents are not saved.
+- **Volume:** Mirrors output-volume changes from compatible GNOME Quick Settings stream objects.
+- **Brightness:** Reads Mutter's modern `org.gnome.Mutter.DisplayConfig.Backlight` property. Unsupported monitors or GNOME versions quietly skip the preview.
+- **Screen recording:** Tracks GNOME Shell's built-in screencast status, not OBS, browser sharing, or other third-party recorders.
+- **Downloads:** Watches `~/Downloads` for activity, including Firefox `.part` and Chromium `.crdownload` files. Shows bytes received where available, **not an exact percentage**; the browser owns total-size and remaining-time information. Other download folders are not watched.
+
+All preview/monitor timers and listeners are cleaned up when Nova is disabled.
+
 ## Floating top bar
 
 By default, Nova makes the **existing** GNOME top bar transparent. It does not remove the panel, icons, indicators, or their click targets.
 
-To keep the usual solid GNOME panel, edit `lib/config.js` and set:
-
-```js
-export const FLOATING_PANEL = false;
-```
-
-Then run `bash install.sh` and log out/back in. Disabling Nova also restores the original panel styling.
+To keep the usual solid GNOME panel, turn off **Transparent top panel** in Nova's preferences. The change applies immediately. Disabling Nova also restores the original panel styling.
 
 **Note:** Custom GNOME themes and other panel-styling extensions may override transparency. If you use **Blur my Shell**, its **Panel** blur or background layer may still paint behind Nova's transparent panel. For testing, disable only Blur my Shell's **Panel** blur in its preferences; keep its other blur effects enabled if you like. GNOME still reserves panel space for maximized windows, so transparency reveals whatever is behind the bar (often a window's dark header), not necessarily your wallpaper.
 
@@ -120,7 +141,10 @@ extension.js       top-center pill, hover/click, animations, GNOME lifecycle
 stylesheet.css     dark pill styling
 lib/geometry.js    panel-aware island sizing and anchoring
 lib/clock.js       clock formatting, calendar dates, and display-mode logic
-lib/config.js      opt-out for floating panel background
+prefs.js            GTK4/libadwaita preferences window
+schemas/            GSettings schema for appearance and feature toggles
+lib/activity-utils.js pure timer and transfer-formatting helpers
+lib/activity-monitor.js GNOME notification, volume, brightness, recording and download signals
 lib/artwork.js     bounded async HTTPS/local cover loading (Soup/Gio)
 lib/artwork-url.js pure metadata URL policy
 lib/waveform.js    synthetic playback animation frames
@@ -135,8 +159,8 @@ All media commands go to the selected MPRIS player over the session bus. Nova ne
 ## Roadmap
 
 - Calendar events integration and locale-specific first day of week.
-- Optional notification previews without suppressing GNOME's native banners.
-- Timer/live activities and user preferences.
+- Optional browser-specific integration for exact download percentages and estimated completion.
+- Support for third-party recorder status when their applications expose compatible APIs.
 - Better small-screen, scaling and multi-monitor testing.
 
 ## Contributing

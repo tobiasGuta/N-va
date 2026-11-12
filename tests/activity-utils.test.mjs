@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {percentage, remainingSeconds, durationLabel, safeTitle, isPartialDownload} from '../lib/activity-utils.js';
+import {percentage, remainingSeconds, durationLabel, formatBytes, safeTitle, isPartialDownload} from '../lib/activity-utils.js';
 
 test('clamps percentages and refuses invalid ranges', () => {
     assert.equal(percentage(50), 50);
@@ -22,4 +22,10 @@ test('sanitizes names and recognizes partial browser downloads', () => {
     assert.equal(isPartialDownload('video.crdownload'), true);
     assert.equal(isPartialDownload('video.part'), true);
     assert.equal(isPartialDownload('finished.mp4'), false);
+});
+
+test('download bytes are displayed as actual received data, not fabricated percent', () => {
+    assert.equal(formatBytes(0), '0 B');
+    assert.equal(formatBytes(1048576), '1.0 MB');
+    assert.equal(formatBytes(Number.NaN), 'Size unknown');
 });
