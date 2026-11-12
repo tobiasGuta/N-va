@@ -29,3 +29,11 @@ test('download bytes are displayed as actual received data, not fabricated perce
     assert.equal(formatBytes(1048576), '1.0 MB');
     assert.equal(formatBytes(Number.NaN), 'Size unknown');
 });
+
+test('download filename normalization supports browser temp extensions', () => {
+    for (const ext of ['.part', '.crdownload']) {
+        const name = 'report.pdf' + ext;
+        assert.equal(isPartialDownload(name), true);
+        assert.equal(name.replace(/\.(crdownload|part|download)$/i, ''), 'report.pdf');
+    }
+});

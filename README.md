@@ -104,7 +104,7 @@ Adjust the compact/expanded widths, accent color (hex `#RRGGBB`), animation spee
 - **Volume:** Mirrors output-volume changes from compatible GNOME Quick Settings stream objects.
 - **Brightness:** Reads Mutter's modern `org.gnome.Mutter.DisplayConfig.Backlight` property. Unsupported monitors or GNOME versions quietly skip the preview.
 - **Screen recording:** Tracks GNOME Shell's built-in screencast status, not OBS, browser sharing, or other third-party recorders.
-- **Downloads:** Watches `~/Downloads` for activity, including Firefox `.part` and Chromium `.crdownload` files. Shows bytes received where available, **not an exact percentage**; the browser owns total-size and remaining-time information. Other download folders are not watched.
+- **Downloads:** Watches `~/Downloads` for activity, including Firefox `.part` and Chromium `.crdownload` files. Shows bytes received where available, **not an exact percentage**; the browser owns total-size and remaining-time information. Other download folders are not watched. When the folder monitor reports a temporary file being renamed to its final filename, Nova now shows **Download complete**.
 
 All preview/monitor timers and listeners are cleaned up when Nova is disabled.
 
