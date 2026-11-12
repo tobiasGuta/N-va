@@ -386,27 +386,14 @@ export default class NovaExtension extends Extension {
 
     _showPlayer(player) {
         this._playerState = player;
-        const mode = activeMode(player);
-        const changed = this._displayMode !== mode;
-        this._displayMode = mode;
-        const playing = mode === 'music';
-
-        this._musicView.visible = playing;
-        this._calendarView.visible = !playing;
-        this._statusDot.visible = false;
-        this._wave.visible = playing;
-        this._compactView.set_accessible_name(
-            playing ? 'Open Nova music controls' : 'Open Nova calendar'
-        );
-        this._compactText.text = playing
-            ? clipped(player.title, 17) : compactClock(new Date());
+        const playing = activeMode(player) === 'music';
+        this._displayMode = playing ? 'music' : 'clock';
 
         if (playing) {
             this._title.text = clipped(player.title, 32);
             this._artist.text = clipped(player.artist, 39);
             this._badge.text = 'NOW PLAYING';
         }
-
         this._updateArt(playing ? player?.artUrl : null);
         if (playing)
             this._startWave();
@@ -417,7 +404,6 @@ export default class NovaExtension extends Extension {
             'media-playback-pause-symbolic', 'nova-control-icon', 15, '#111315'
         ));
         this._playPause.set_accessible_name('Pause');
-
         this._previous.reactive = player?.canPrevious ?? false;
         this._previous.can_focus = this._previous.reactive;
         this._playPause.reactive = player?.canToggle ?? false;
@@ -427,29 +413,327 @@ export default class NovaExtension extends Extension {
         for (const button of [this._previous, this._playPause, this._next])
             button.opacity = button.reactive ? 255 : 95;
 
+        this._refreshPresentation(true);
+    }
+
+    _animationTime() {
+        return this._settings?.get_int('animation-duration') ?? 240;
+    }
+
+    _accentColor() {
+        const chosen = this._settings?.get_string('accent-color') ?? '#baff80';
+        return /^#[0-9a-fA-F]{6}$/.test(chosen) ? chosen : '#baff80';
+    }
+
+    _applyAppearance() {
+        const accent = this._accentColor();
+        for (const bar of this._waveBars ?? [])
+            bar.style = `background-color: ${accent}; border-radius: 2px;`;
+        if (this._badge)
+            this._badge.style = `font-size: 9px; font-weight: 700; color: ${accent};`;
+        if (this._statusDot)
+            this._statusDot.style = `background-color: ${accent}; border-radius: 4px;`;
+        if (this._playPause)
+            this._playPause.style = `background-color: ${accent}; border-radius: 17px;`;
+        if (this._activityBarFill)
+            this._activityBarFill.style = `background-color: ${accent}; border-radius: 3px;`;
+        if (this._pinned)
+            this._setPinned(true);
+    }
+
+    _syncPanelStyle() {
+        if (!Main.panel || !this._settings)
+            return;
+        const enabled = this._settings.get_boolean('floating-panel');
+        if (enabled && !this._panelCustomized) {
+            this._oldPanelStyle = Main.panel.get_style();
+            Main.panel.add_style_class_name('nova-floating-panel');
+            Main.panel.set_style(
+                (this._oldPanelStyle ?? '') +
+                ' background-color: transparent; border: none; box-shadow: none;'
+            );
+            this._panelCustomized = true;
+        } else if (!enabled) {
+            this._restorePanelStyle();
+        }
+    }
+
+    _restorePanelStyle() {
+        if (!this._panelCustomized)
+            return;
+        Main.panel.remove_style_class_name('nova-floating-panel');
+        Main.panel.set_style(this._oldPanelStyle ?? '');
+        this._panelCustomized = false;
+        this._oldPanelStyle = null;
+    }
+
+    _onSettingChanged(key) {
+        if (!this._island)
+            return;
+        if (key === 'floating-panel')
+            this._syncPanelStyle();
+        else if (key === 'compact-width' || key === 'expanded-width')
+            this._position(false);
+        else if (key === 'accent-color')
+            this._applyAppearance();
+        else if (key === 'show-timer' && !this._settings.get_boolean(key)) {
+            this._timerTarget = 0;
+            this._refreshPresentation(true);
+        } else if (key.startsWith('show-')) {
+            this._refreshPresentation(true);
+        }
+        if (this._timerRow)
+            this._timerRow.visible = this._settings.get_boolean('show-timer');
+    }
+
+    _currentActivity() {
+        if (this._transient)
+            return this._transient;
+        if (this._recording && this._settings?.get_boolean('show-recording')) {
+            const seconds = Math.floor(
+                (GLib.get_monotonic_time() - this._recordingStart) / 1000000
+            );
+            return {
+                kind: 'recording',
+                icon: 'media-record-symbolic',
+                title: 'Recording screen',
+                detail: durationLabel(seconds),
+            };
+        }
+        if (this._timerTarget && this._settings?.get_boolean('show-timer')) {
+            const seconds = remainingSeconds(
+                this._timerTarget, GLib.get_monotonic_time()
+            );
+            return {
+                kind: 'timer',
+                icon: 'alarm-symbolic',
+                title: 'Timer',
+                detail: durationLabel(seconds),
+                percent: percentage(
+                    this._timerLength - seconds, 0, this._timerLength
+                ),
+            };
+        }
+        return null;
+    }
+
+    _refreshPresentation(animate = false) {
+        if (!this._island)
+            return;
+        const activity = this._currentActivity();
+        const playing = this._displayMode === 'music';
+        const next = activity ? 'activity' : this._displayMode;
+        const changed = this._presentedMode !== next;
+        this._presentedMode = next;
+
+        this._musicView.visible = !activity && playing;
+        this._calendarView.visible = !activity && !playing;
+        this._activityView.visible = Boolean(activity);
+        this._wave.visible = !activity && playing;
+        this._statusDot.visible = false;
+
+        if (activity) {
+            this._compactText.text = clipped(
+                activity.kind === 'timer' ? `Timer ${activity.detail}`
+                    : activity.kind === 'recording' ? `REC ${activity.detail}`
+                    : activity.percent !== undefined
+                        ? `${activity.title} ${activity.detail}`
+                        : activity.title, 18
+            );
+            this._compactArt.set_child(icon(
+                activity.icon ?? 'dialog-information-symbolic',
+                'nova-activity-compact-icon', 13, this._accentColor()
+            ));
+            this._activityTitle.text = clipped(activity.title ?? '', 33);
+            this._activityDetail.text = clipped(activity.detail ?? '', 43);
+            this._activityIcon.set_child(icon(
+                activity.icon ?? 'dialog-information-symbolic',
+                'nova-activity-icon', 24, this._accentColor()
+            ));
+            this._activityStop.visible = activity.kind === 'timer';
+            const hasPercent = Number.isFinite(activity.percent);
+            this._activityProgress.visible = hasPercent;
+            if (hasPercent)
+                this._activityBarFill.width = Math.round(
+                    Math.max(0, Math.min(100, activity.percent)) * 2.5
+                );
+        } else {
+            this._compactText.text = playing
+                ? clipped(this._playerState?.title ?? '', 17)
+                : compactClock(new Date());
+            this._renderArtwork(this._lastGicon);
+        }
+        this._compactView.set_accessible_name(activity
+            ? 'Open Nova live activity' : playing
+                ? 'Open Nova music controls' : 'Open Nova calendar');
+
         if (changed) {
             if (this._expanded) {
-                const incoming = playing ? this._musicView : this._calendarView;
-                incoming.remove_all_transitions();
-                incoming.opacity = this._reduceMotion() ? 255 : 0;
-                this._position(true);
+                this._position(animate);
+                const visible = activity ? this._activityView :
+                    playing ? this._musicView : this._calendarView;
+                visible.remove_all_transitions();
+                visible.opacity = this._reduceMotion() ? 255 : 0;
                 if (!this._reduceMotion()) {
-                    incoming.ease({
+                    visible.ease({
                         opacity: 255,
-                        duration: 235,
+                        duration: this._animationTime(),
                         mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
                     });
                 }
-            } else if (!this._reduceMotion()) {
+            } else if (animate && !this._reduceMotion()) {
                 this._compactView.remove_all_transitions();
-                this._compactView.opacity = 85;
+                this._compactView.opacity = 100;
                 this._compactView.ease({
                     opacity: 255,
-                    duration: 250,
+                    duration: this._animationTime(),
                     mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
                 });
             }
         }
+    }
+
+    _showPreview(activity) {
+        if (!this._island)
+            return;
+        this._transient = activity;
+        if (this._activityExpireSource)
+            GLib.Source.remove(this._activityExpireSource);
+        this._activityExpireSource = GLib.timeout_add(
+            GLib.PRIORITY_DEFAULT, activity.duration ?? 3000, () => {
+                this._activityExpireSource = 0;
+                this._transient = null;
+                if (!this._island)
+                    return GLib.SOURCE_REMOVE;
+                this._refreshPresentation(true);
+                if (!this._pinned && !this._island.hover &&
+                    !this._recording && !this._timerTarget)
+                    this._setExpanded(false);
+                return GLib.SOURCE_REMOVE;
+            }
+        );
+        this._refreshPresentation(true);
+        if (!this._expanded)
+            this._setExpanded(true);
+    }
+
+    _recordingChanged(recording) {
+        this._recording = recording;
+        if (recording)
+            this._recordingStart = GLib.get_monotonic_time();
+        this._refreshPresentation(true);
+        if (recording && this._settings?.get_boolean('show-recording'))
+            this._setExpanded(true);
+    }
+
+    _startTimer(minutes) {
+        if (!this._settings?.get_boolean('show-timer'))
+            return;
+        this._timerLength = minutes * 60;
+        this._timerTarget = GLib.get_monotonic_time() +
+            this._timerLength * 1000000;
+        this._transient = null;
+        if (this._activityExpireSource) {
+            GLib.Source.remove(this._activityExpireSource);
+            this._activityExpireSource = 0;
+        }
+        this._refreshPresentation(true);
+        this._setExpanded(true);
+    }
+
+    _stopTimer() {
+        this._timerTarget = 0;
+        this._timerLength = 0;
+        this._refreshPresentation(true);
+        if (!this._pinned && !this._island?.hover)
+            this._scheduleCollapse();
+    }
+
+    _tickActivities() {
+        if (!this._island)
+            return;
+        if (this._timerTarget &&
+            remainingSeconds(this._timerTarget, GLib.get_monotonic_time()) === 0) {
+            this._timerTarget = 0;
+            this._timerLength = 0;
+            this._showPreview({
+                kind: 'timer-done', icon: 'alarm-symbolic',
+                title: 'Timer finished', detail: 'Time is up', duration: 4500,
+            });
+        }
+        if (this._currentActivity())
+            this._refreshPresentation(false);
+    }
+
+    _buildActivityView() {
+        const view = new St.BoxLayout({
+            orientation: Clutter.Orientation.VERTICAL,
+            style: 'spacing: 10px;',
+            x_expand: true,
+            y_expand: true,
+            visible: false,
+        });
+
+        const header = new St.BoxLayout({
+            orientation: Clutter.Orientation.HORIZONTAL,
+            style: 'spacing: 11px;',
+            x_expand: true,
+        });
+        this._activityIcon = new St.Bin({
+            style: 'background-color: #202a25; border-radius: 11px;',
+            width: 45, height: 45,
+            x_align: Clutter.ActorAlign.CENTER,
+            y_align: Clutter.ActorAlign.CENTER,
+        });
+        this._activityIcon.set_child(icon(
+            'dialog-information-symbolic', 'nova-activity-icon', 23, '#baff80'
+        ));
+        header.add_child(this._activityIcon);
+
+        const texts = new St.BoxLayout({
+            orientation: Clutter.Orientation.VERTICAL,
+            style: 'spacing: 4px;',
+            x_expand: true,
+            y_align: Clutter.ActorAlign.CENTER,
+        });
+        this._activityTitle = label('', 'nova-activity-title');
+        this._activityTitle.style = 'color: #f8fafc; font-size: 12px; font-weight: 700;';
+        this._activityDetail = label('', 'nova-activity-detail');
+        this._activityDetail.style = 'color: #a6abb4; font-size: 10px;';
+        texts.add_child(this._activityTitle);
+        texts.add_child(this._activityDetail);
+        header.add_child(texts);
+        this._activityPin = this._makePinButton();
+        header.add_child(this._activityPin);
+        header.add_child(this._makeCloseButton());
+        view.add_child(header);
+
+        const footer = new St.BoxLayout({
+            orientation: Clutter.Orientation.HORIZONTAL,
+            style: 'spacing: 9px;',
+            x_expand: true,
+        });
+        this._activityProgress = new St.Bin({
+            style: 'background-color: #30333b; border-radius: 3px;',
+            width: 250, height: 6,
+            y_align: Clutter.ActorAlign.CENTER,
+        });
+        this._activityBarFill = new St.Widget({
+            style: 'background-color: #baff80; border-radius: 3px;',
+            width: 0, height: 6,
+        });
+        this._activityProgress.set_child(this._activityBarFill);
+        footer.add_child(this._activityProgress);
+        this._activityStop = new St.Button({
+            style: 'background-color: #26292e; border-radius: 11px;',
+            width: 48, height: 26, reactive: true, can_focus: true,
+            child: label('STOP', 'nova-timer-stop'),
+        });
+        this._activityStop.set_accessible_name('Stop timer');
+        this._activityStop.connect('clicked', () => this._stopTimer());
+        footer.add_child(this._activityStop);
+        view.add_child(footer);
+        return view;
     }
 
     _reduceMotion() {
@@ -458,6 +742,7 @@ export default class NovaExtension extends Extension {
     }
 
     _renderArtwork(gicon = null) {
+        this._lastGicon = gicon;
         if (!this._artwork || !this._compactArt)
             return;
         const picture = (size, fallback) => gicon
@@ -541,7 +826,7 @@ export default class NovaExtension extends Extension {
         const now = new Date();
         this._calendarTime.text = fullClock(now);
         this._calendarDate.text = longDate(now);
-        if (this._displayMode === 'clock')
+        if (this._displayMode === 'clock' && !this._currentActivity())
             this._compactText.text = compactClock(now);
 
         if (this._lastDayKey !== now.toDateString()) {
@@ -552,7 +837,7 @@ export default class NovaExtension extends Extension {
 
     _setPinned(pinned) {
         this._pinned = pinned;
-        for (const button of [this._pinButton, this._calendarPin]) {
+        for (const button of [this._pinButton, this._calendarPin, this._activityPin]) {
             if (!button)
                 continue;
             button.style = pinned
@@ -930,6 +1215,7 @@ export default class NovaExtension extends Extension {
         this._waveBars = null;
         this._statusDot = null;
         this._activityView = null;
+        this._activityPin = null;
         this._activityTitle = null;
         this._activityDetail = null;
         this._activityIcon = null;
@@ -940,6 +1226,8 @@ export default class NovaExtension extends Extension {
         this._settings = null;
         this._badge = null;
         this._pinButton = null;
+        this._lastGicon = null;
+        this._transient = null;
         this._pinned = false;
         this._playerState = null;
     }
