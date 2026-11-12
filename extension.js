@@ -6,12 +6,10 @@ import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import {MprisService} from './lib/mpris.js';
+import {getIslandGeometry} from './lib/geometry.js';
 
 const COMPACT_WIDTH = 166;
 const COMPACT_HEIGHT = 32;
-const EXPANDED_WIDTH = 320;
-const EXPANDED_HEIGHT = 116;
-const TOP_MARGIN = 4;
 const COLLAPSE_DELAY_MS = 650;
 
 function icon(name, styleClass = 'nova-icon') {
@@ -55,6 +53,7 @@ export default class NovaExtension extends Extension {
         this._playerState = null;
         this._collapseSource = 0;
         this._monitorChangedId = 0;
+        this._panelAllocationId = 0;
 
         this._buildUi();
         Main.layoutManager.addChrome(this._island, {
@@ -69,6 +68,10 @@ export default class NovaExtension extends Extension {
 
         this._monitorChangedId = Main.layoutManager.connect(
             'monitors-changed', () => this._position(false)
+        );
+        // GNOME panel height can change with themes, scaling or extensions.
+        this._panelAllocationId = Main.panel.connect(
+            'allocation-changed', () => this._position(false)
         );
         this._position(false);
 
@@ -254,13 +257,19 @@ export default class NovaExtension extends Extension {
         if (!monitor)
             return;
 
-        const width = Math.min(
-            this._expanded ? EXPANDED_WIDTH : COMPACT_WIDTH,
-            Math.max(120, monitor.width - 24)
-        );
-        const height = this._expanded ? EXPANDED_HEIGHT : COMPACT_HEIGHT;
-        const x = Math.round(monitor.x + (monitor.width - width) / 2);
-        const y = monitor.y + TOP_MARGIN;
+        // The compact island must fit *inside* the GNOME top panel rather
+        // than overflowing into the active window below it. Expanded mode
+        // uses the same top-center anchor and grows down from there.
+        const [panelX, panelY] = Main.panel.get_transformed_position();
+        const panel = {
+            x: Number.isFinite(panelX) ? panelX : monitor.x,
+            y: Number.isFinite(panelY) ? panelY : monitor.y,
+            width: Main.panel.get_width() || monitor.width,
+            height: Main.panel.get_height() ||
+                Main.layoutManager.panelBox?.height || COMPACT_HEIGHT + 6,
+        };
+        const {x, y, width, height} =
+            getIslandGeometry(panel, monitor, this._expanded);
 
         this._island.remove_all_transitions();
 
@@ -312,6 +321,10 @@ export default class NovaExtension extends Extension {
         if (this._monitorChangedId) {
             Main.layoutManager.disconnect(this._monitorChangedId);
             this._monitorChangedId = 0;
+        }
+        if (this._panelAllocationId) {
+            Main.panel.disconnect(this._panelAllocationId);
+            this._panelAllocationId = 0;
         }
 
         if (this._clockActor && this._clockWasVisible !== null)

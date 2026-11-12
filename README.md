@@ -6,7 +6,7 @@ Nova is an early-stage GNOME Shell extension that puts a dark, interactive pill 
 
 ## Features in v0.1
 
-- Compact, centered black pill and smooth expand/collapse animation.
+- Compact, centered black pill fitted to the GNOME panel height, with smooth expand/collapse animation.
 - Shows the currently playing track and artist.
 - Play/pause, previous and next buttons (when the player supports them).
 - Automatically discovers MPRIS players and follows playback changes.
@@ -87,6 +87,7 @@ journalctl --user -b /usr/bin/gnome-shell --no-pager | grep -i nova
 ```text
 extension.js       top-center pill, hover/click, animations, GNOME lifecycle
 stylesheet.css     dark pill styling
+lib/geometry.js    panel-aware island sizing and anchoring
 lib/mpris.js       session D-Bus discovery, updates, media commands
 lib/player.js      pure media state normalization / player selection
 tests/             pure JavaScript regression tests
