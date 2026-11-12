@@ -214,6 +214,34 @@ export default class NovaExtension extends Extension {
             this._pinned = false;
             this._setExpanded(false);
         });
+        this._pinButton = new St.Button({
+            style_class: 'nova-pin',
+            style: 'background-color: #1a1c20; border-radius: 11px; ' +
+                'color: #b9bec7; font-size: 9px; font-weight: 700;',
+            width: 31,
+            height: 25,
+            can_focus: true,
+            reactive: true,
+            x_align: Clutter.ActorAlign.CENTER,
+            y_align: Clutter.ActorAlign.START,
+            child: label('PIN', 'nova-pin-label'),
+        });
+        this._pinButton.set_accessible_name('Keep Nova expanded');
+        this._pinButton.connect('clicked', () => {
+            this._pinned = !this._pinned;
+            this._pinButton.set_style(this._pinned
+                ? 'background-color: #baff80; border-radius: 11px; ' +
+                    'color: #111315; font-size: 9px; font-weight: 700;'
+                : 'background-color: #1a1c20; border-radius: 11px; ' +
+                    'color: #b9bec7; font-size: 9px; font-weight: 700;');
+            this._pinButton.set_accessible_name(this._pinned
+                ? 'Unpin Nova' : 'Keep Nova expanded');
+            if (this._pinned)
+                this._cancelCollapse();
+            else if (!this._island.hover)
+                this._scheduleCollapse();
+        });
+        header.add_child(this._pinButton);
         header.add_child(close);
         this._expandedView.add_child(header);
 
@@ -439,6 +467,7 @@ export default class NovaExtension extends Extension {
         this._compactView = null;
         this._expandedView = null;
         this._badge = null;
+        this._pinButton = null;
         this._pinned = false;
         this._playerState = null;
     }

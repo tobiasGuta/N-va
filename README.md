@@ -9,7 +9,7 @@ Nova is an early-stage GNOME Shell extension that puts a dark, interactive pill 
 - Compact, centered black pill fitted to the GNOME panel height, with smooth expand/collapse and content fade-in.
 - A rounded black expanded card showing the current track and artist, styled consistently even on customized GNOME Shell themes.
 - Play/pause, previous and next buttons (when the player supports them).
-- Hover to preview; click the compact pill to pin the card open; close to collapse.
+- Hover to expand; use the PIN button to keep Nova open while using other apps; close to collapse.
 - Automatically discovers MPRIS players and follows playback changes.
 - Restores the original GNOME center clock when disabled.
 - Respects GNOME 51 reduced-motion preference; no network calls, AI, or subprocesses.
