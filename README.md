@@ -4,7 +4,7 @@
 
 Nova is an early-stage GNOME Shell extension with a compact clock and calendar by default. When an MPRIS player actively plays audio/video, it switches to a music island. Hover to expand; use the discreet pin icon to keep it open.
 
-## Features in v0.5
+## Features in v0.5.1
 
 - Compact, centered black pill fitted to the GNOME panel height, with smooth expand/collapse and content fade-in.
 - Default compact clock with local time and weekday; expanded month-view calendar with navigation.
@@ -17,8 +17,9 @@ Nova is an early-stage GNOME Shell extension with a compact clock and calendar b
 - Play/pause, previous and next buttons (when the player supports them).
 - Hover to expand; use an icon-only pin button to keep Nova open while using other apps; close to collapse.
 - Countdown timers (5, 15, or 25 minutes) launched from the calendar and shown as live activities.
-- Brief notification previews mirrored from GNOME’s Message Tray, without suppressing native banners.
-- Automatic volume indicators from GNOME Quick Settings and brightness indicators from Mutter backlight.
+- Optional notification previews; off by default to avoid duplicate GNOME banners.
+- Faster signal-driven volume indicators from GNOME Quick Settings and brightness updates from Mutter.
+- Optional experimental replacement of GNOME’s volume/brightness OSD with Nova’s own overlays, with safe restoration when disabled.
 - GNOME built-in screencast activity with elapsed time.
 - Download previews from the default Downloads folder, including received byte counts for browser partial files (not total percentages).
 - Native settings window for sizes, accent color, animation duration, floating bar, and individual activity toggles.
@@ -89,7 +90,7 @@ playerctl metadata
 
 ## Preferences
 
-Open **Extensions → Nova → Preferences**, or run:
+Open **Extensions → Nova → Preferences**, click the small gear button inside Nova’s expanded calendar or music player, or run:
 
 ```bash
 gnome-extensions prefs nova@tobiasguta.github.io
@@ -100,7 +101,8 @@ Adjust the compact/expanded widths, accent color (hex `#RRGGBB`), animation spee
 ## Live activity coverage
 
 - **Timer:** Start a 5-, 15-, or 25-minute countdown in the expanded calendar. It remains visible until stopped or finished.
-- **Notifications:** Preview notification titles from GNOME's existing Message Tray; the normal banner is still shown. Notification contents are not saved.
+- **Notifications:** Preview notification titles from GNOME's existing Message Tray. **Mirroring is off by default** because GNOME would show its own banner too. Enable it in preferences only if you want both; native alerts remain intact.
+- **Volume / brightness OSD:** GNOME normally shows its own OSD as well as Nova. The new **Replace native volume/brightness OSD** preference is experimental and off by default. When enabled, Nova suppresses only volume/brightness OSD types that it can detect, leaving other GNOME overlays intact. Disabling Nova restores the original GNOME methods.
 - **Volume:** Mirrors output-volume changes from compatible GNOME Quick Settings stream objects.
 - **Brightness:** Reads Mutter's modern `org.gnome.Mutter.DisplayConfig.Backlight` property. Unsupported monitors or GNOME versions quietly skip the preview.
 - **Screen recording:** Tracks GNOME Shell's built-in screencast status, not OBS, browser sharing, or other third-party recorders.

@@ -106,6 +106,8 @@ export default class NovaExtension extends Extension {
         this._presentedMode = 'clock';
         this._panelCustomized = false;
         this._activities = null;
+        this._osdHooks = [];
+        this._osdHookEnabled = false;
         this._settingsChangedId = 0;
         this._settings = this.getSettings();
 
@@ -156,6 +158,7 @@ export default class NovaExtension extends Extension {
             recording => this._recordingChanged(recording)
         );
         this._activities.start();
+        this._syncNativeOsd();
         this._applyAppearance();
     }
 
@@ -307,6 +310,7 @@ export default class NovaExtension extends Extension {
         this._pinButton = this._makePinButton();
         header.add_child(this._pinButton);
         header.add_child(this._makeCloseButton());
+        header.add_child(this._makeSettingsButton());
         this._musicView.add_child(header);
 
         const footer = new St.BoxLayout({
@@ -472,6 +476,8 @@ export default class NovaExtension extends Extension {
             return;
         if (key === 'floating-panel')
             this._syncPanelStyle();
+        else if (key === 'replace-native-osd')
+            this._syncNativeOsd();
         else if (key === 'compact-width' || key === 'expanded-width')
             this._position(false);
         else if (key === 'accent-color')
@@ -886,6 +892,23 @@ export default class NovaExtension extends Extension {
         return button;
     }
 
+    _makeSettingsButton() {
+        const button = new St.Button({
+            style_class: 'nova-settings',
+            style: 'background-color: #1a1c20; border-radius: 13px;',
+            width: 25,
+            height: 25,
+            can_focus: true,
+            reactive: true,
+            x_align: Clutter.ActorAlign.CENTER,
+            y_align: Clutter.ActorAlign.CENTER,
+            child: icon('emblem-system-symbolic', 'nova-settings-icon', 12, '#c8cbd0'),
+        });
+        button.set_accessible_name('Open Nova preferences');
+        button.connect('clicked', () => this.openPreferences());
+        return button;
+    }
+
     _makeCloseButton() {
         const button = new St.Button({
             style_class: 'nova-close',
@@ -948,6 +971,7 @@ export default class NovaExtension extends Extension {
 
         this._calendarPin = this._makePinButton();
         top.add_child(this._calendarPin);
+        top.add_child(this._makeSettingsButton());
         top.add_child(this._makeCloseButton());
         view.add_child(top);
 
@@ -1177,6 +1201,7 @@ export default class NovaExtension extends Extension {
             GLib.Source.remove(this._activityTickSource);
             this._activityTickSource = 0;
         }
+        this._restoreNativeOsd();
         this._activities?.destroy();
         this._activities = null;
         this._cancelCollapse();

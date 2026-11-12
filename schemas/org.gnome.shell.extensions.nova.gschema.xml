@@ -6,8 +6,9 @@
     <key name="expanded-width" type="i"><default>328</default><range min="300" max="430"/></key>
     <key name="animation-duration" type="i"><default>240</default><range min="100" max="500"/></key>
     <key name="accent-color" type="s"><default>'#baff80'</default></key>
-    <key name="show-notifications" type="b"><default>true</default></key>
+    <key name="show-notifications" type="b"><default>false</default></key>
     <key name="show-volume" type="b"><default>true</default></key>
+    <key name="replace-native-osd" type="b"><default>false</default></key>
     <key name="show-brightness" type="b"><default>true</default></key>
     <key name="show-recording" type="b"><default>true</default></key>
     <key name="show-downloads" type="b"><default>true</default></key>
