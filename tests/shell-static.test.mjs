@@ -39,3 +39,9 @@ test('enable failure rolls back panel and clock changes', () => {
     assert.match(extension, /this\.disable\(\)/);
     assert.match(extension, /this\._oldPanelStyle/);
 });
+
+test('visualizer timers and artwork requests clean up on disable', () => {
+    assert.match(extension, /this\._stopWave\(\)/);
+    assert.match(extension, /this\._artLoader\?\.destroy\(\)/);
+    assert.match(extension, /this\._updateArt\(/);
+});

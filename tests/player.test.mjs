@@ -13,11 +13,13 @@ test('normalizes metadata and capabilities', () => {
         Metadata: {
             'xesam:title': 'Nova Song',
             'xesam:artist': ['Artist A', 'Artist B'],
+            'mpris:artUrl': 'https://images.example.org/cover.jpg',
         },
     });
 
     assert.equal(player.title, 'Nova Song');
     assert.equal(player.artist, 'Artist A, Artist B');
+    assert.equal(player.artUrl, 'https://images.example.org/cover.jpg');
     assert.equal(player.canNext, true);
     assert.equal(player.canPrevious, false);
     assert.equal(player.canToggle, true);
@@ -31,6 +33,7 @@ test('uses safe defaults for missing and malformed metadata', () => {
     assert.equal(player.title, 'Unknown track');
     assert.equal(player.artist, 'Unknown artist');
     assert.equal(player.status, 'Stopped');
+    assert.equal(player.artUrl, null);
 });
 
 test('does not offer actions when the player cannot be controlled', () => {
