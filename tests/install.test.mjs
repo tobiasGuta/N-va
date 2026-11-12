@@ -15,7 +15,7 @@ test('installer includes every runtime library, including geometry.js', () => {
         const bin = path.join(sandbox, 'bin');
         fs.mkdirSync(bin);
         const gnomeCommand = path.join(bin, 'gnome-extensions');
-        fs.writeFileSync(gnomeCommand, '#!/bin/sh\\nexit 0\\n');
+        fs.writeFileSync(gnomeCommand, '#!/bin/sh\nexit 0\n');
         fs.chmodSync(gnomeCommand, 0o755);
         const run = spawnSync('bash', [path.join(root, 'install.sh')], {
             encoding: 'utf8',
