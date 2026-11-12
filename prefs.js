@@ -32,8 +32,10 @@ export default class NovaPreferences extends ExtensionPreferences {
         });
         page.add(behavior);
         toggles.push(
-            [behavior, 'show-notifications', 'Mirror GNOME notifications in Nova',
-                'Off by default to avoid two banners. GNOME notifications remain enabled.'],
+            [behavior, 'show-notifications', 'Show notifications in Nova',
+                'Preview new GNOME notifications inside the island'],
+            [behavior, 'replace-native-notifications', 'Nova-only notification banners',
+                'Hide ordinary GNOME banners only when Nova previews them. Critical alerts stay native.'],
             [behavior, 'show-volume', 'Nova volume indicator',
                 'Enable Nova’s volume overlay (GNOME may show its own OSD too)'],
             [behavior, 'replace-native-osd', 'Replace native volume/brightness OSD',

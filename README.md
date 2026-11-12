@@ -17,7 +17,7 @@ Nova is an early-stage GNOME Shell extension with a compact clock and calendar b
 - Play/pause, previous and next buttons (when the player supports them).
 - Hover to expand; use an icon-only pin button to keep Nova open while using other apps; close to collapse.
 - Countdown timers (5, 15, or 25 minutes) launched from the calendar and shown as live activities.
-- Optional notification previews; off by default to avoid duplicate GNOME banners.
+- Native Nova notification previews, with an optional Nova-only mode that keeps GNOME history and critical alerts.
 - Faster signal-driven volume indicators from GNOME Quick Settings and brightness updates from Mutter.
 - Optional experimental replacement of GNOME’s volume/brightness OSD with Nova’s own overlays, with safe restoration when disabled.
 - GNOME built-in screencast activity with elapsed time.
@@ -27,7 +27,7 @@ Nova is an early-stage GNOME Shell extension with a compact clock and calendar b
 - Restores the original GNOME center clock when disabled.
 - Respects GNOME 51 reduced-motion preference; no AI or subprocesses. Optional HTTPS requests occur only for remote cover art during playback.
 
-**Status:** Experimental v0.5.1 release targeting GNOME Shell 49–51. The new activities and preferences use GNOME APIs that may vary with Fedora/desktop extensions and need live Fedora testing. The calendar is local-only (no appointments). Nova mirrors notifications rather than replacing the native banner.
+**Status:** Experimental v0.5.1 release targeting GNOME Shell 49–51. The new activities and preferences use GNOME APIs that may vary with Fedora/desktop extensions and need live Fedora testing. The calendar is local-only (no appointments). Nova can replace ordinary banners when the optional Nova-only setting is enabled; GNOME's critical alerts remain native.
 
 ## Install on Fedora GNOME
 
@@ -101,7 +101,7 @@ Adjust the compact/expanded widths, accent color (hex `#RRGGBB`), animation spee
 ## Live activity coverage
 
 - **Timer:** Start a 5-, 15-, or 25-minute countdown in the expanded calendar. It remains visible until stopped or finished.
-- **Notifications:** Preview notification titles from GNOME's existing Message Tray. **Mirroring is off by default** after updating because GNOME would show its own banner too. Enable it in preferences only if you want both; native alerts remain intact.
+- **Notifications:** Nova previews regular GNOME notification titles. In **Nova-only notification banners** mode, it acknowledges the incoming normal alert before GNOME displays a second banner, while leaving the notification in GNOME's history. Critical alerts remain native. Disable the Nova-only switch to see both banners. If you previously turned off **Show notifications in Nova**, turn it back on in preferences; GSettings retains explicit choices across upgrades.
 - **Volume / brightness OSD:** GNOME normally shows its own OSD as well as Nova. The new **Replace native volume/brightness OSD** preference is experimental and off by default. When enabled, Nova suppresses only volume/brightness OSD types that it can detect, leaving other GNOME overlays intact. Disabling Nova restores the original GNOME methods.
 - **Volume:** Mirrors output-volume changes from compatible GNOME Quick Settings stream objects.
 - **Brightness:** Reads Mutter's modern `org.gnome.Mutter.DisplayConfig.Backlight` property. Unsupported monitors or GNOME versions quietly skip the preview.
