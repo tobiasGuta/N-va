@@ -46,3 +46,11 @@ test('Mutter Backlight entries support non-0 minima and unsupported displays', (
     assert.equal(backlightLevel([2, [{active: false, min: 0, max: 100, value: 50}]]), null);
     assert.equal(backlightLevel(null), null);
 });
+
+test('completion tracking recognizes Firefox and Chromium temporary names', () => {
+    for (const candidate of ['photo.png.part', 'archive.zip.crdownload']) {
+        const basename = candidate.replace(/\.(crdownload|part|download)$/i, '');
+        assert.equal(isPartialDownload(candidate), true);
+        assert.equal(isPartialDownload(basename), false);
+    }
+});
