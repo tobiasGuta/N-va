@@ -555,7 +555,7 @@ export default class NovaExtension extends Extension {
             this._activityProgress.visible = hasPercent;
             if (hasPercent)
                 this._activityBarFill.width = Math.round(
-                    Math.max(0, Math.min(100, activity.percent)) * 2.5
+                    Math.max(0, Math.min(100, activity.percent)) * 2.25
                 );
         } else {
             this._compactText.text = playing
@@ -715,7 +715,7 @@ export default class NovaExtension extends Extension {
         });
         this._activityProgress = new St.Bin({
             style: 'background-color: #30333b; border-radius: 3px;',
-            width: 250, height: 6,
+            width: 225, height: 6,
             y_align: Clutter.ActorAlign.CENTER,
         });
         this._activityBarFill = new St.Widget({

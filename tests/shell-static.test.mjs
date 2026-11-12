@@ -24,8 +24,8 @@ test('floating bar does not remove the GNOME panel or its controls', () => {
 
 test('clock and music modes have independent expanded layouts', () => {
     assert.match(extension, /_buildCalendar\(\)/);
-    assert.match(extension, /this\._musicView\.visible = playing/);
-    assert.match(extension, /this\._calendarView\.visible = !playing/);
+    assert.match(extension, /this\._musicView\.visible = !activity && playing/);
+    assert.match(extension, /this\._calendarView\.visible = !activity && !playing/);
 });
 
 test('never connects to unsupported Main.panel allocation-changed signal', () => {

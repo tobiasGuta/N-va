@@ -40,8 +40,15 @@ test('calendar expands downward without shifting its centered anchor', () => {
     const panel = {x: 0, y: 0, width: 1648, height: 28};
     const compact = getIslandGeometry(panel, panel, false, 'clock');
     const calendar = getIslandGeometry(panel, panel, true, 'clock');
-    assert.equal(calendar.height, 316);
+    assert.equal(calendar.height, 354);
     assert.equal(calendar.y, compact.y);
     assert.equal(calendar.x + calendar.width / 2,
         compact.x + compact.width / 2);
+});
+
+test('configurable pill dimensions respect user preferences', () => {
+    const panel = {x: 0, y: 0, width: 1800, height: 28};
+    const options = {compactWidth: 188, expandedWidth: 380};
+    assert.equal(getIslandGeometry(panel, panel, false, 'clock', options).width, 188);
+    assert.equal(getIslandGeometry(panel, panel, true, 'clock', options).width, 380);
 });

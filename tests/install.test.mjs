@@ -31,6 +31,10 @@ test('installer includes every runtime library, including geometry.js', () => {
             name => name.endsWith('.js')
         );
         assert.ok(sourceModules.includes('geometry.js'));
+        assert.ok(fs.existsSync(path.join(installed, 'prefs.js')));
+        assert.ok(fs.existsSync(path.join(installed, 'schemas',
+            'org.gnome.shell.extensions.nova.gschema.xml')));
+        assert.ok(fs.existsSync(path.join(installed, 'schemas', 'gschemas.compiled')));
         for (const file of sourceModules) {
             assert.equal(
                 fs.readFileSync(path.join(installed, 'lib', file), 'utf8'),
