@@ -45,3 +45,13 @@ test('visualizer timers and artwork requests clean up on disable', () => {
     assert.match(extension, /this\._artLoader\?\.destroy\(\)/);
     assert.match(extension, /this\._updateArt\(/);
 });
+
+test('no visible PIN text remains in the island', () => {
+    assert.doesNotMatch(extension, /label\(['"]PIN['"]/);
+    assert.match(extension, /view-pin-symbolic/);
+});
+
+test('progress is rendered by a width-constrained fill inside a bar', () => {
+    assert.match(extension, /_activityProgress\.add_child\(this\._activityBarFill\)/);
+    assert.match(extension, /_activityBarFill\.width = Math\.round/);
+});

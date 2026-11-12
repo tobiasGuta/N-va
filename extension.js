@@ -567,7 +567,10 @@ export default class NovaExtension extends Extension {
             this._compactText.text = playing
                 ? clipped(this._playerState?.title ?? '', 17)
                 : compactClock(new Date());
-            this._renderArtwork(this._lastGicon);
+            // Keep loaded cover actors stable during routine MPRIS polls.
+            // Restore them only when a temporary activity has replaced them.
+            if (changed)
+                this._renderArtwork(this._lastGicon);
         }
         this._compactView.set_accessible_name(activity
             ? 'Open Nova live activity' : playing
@@ -719,7 +722,8 @@ export default class NovaExtension extends Extension {
             style: 'spacing: 9px;',
             x_expand: true,
         });
-        this._activityProgress = new St.Bin({
+        this._activityProgress = new St.BoxLayout({
+            orientation: Clutter.Orientation.HORIZONTAL,
             style: 'background-color: #30333b; border-radius: 3px;',
             width: 225, height: 6,
             y_align: Clutter.ActorAlign.CENTER,
@@ -727,8 +731,10 @@ export default class NovaExtension extends Extension {
         this._activityBarFill = new St.Widget({
             style: 'background-color: #baff80; border-radius: 3px;',
             width: 0, height: 6,
+            x_expand: false,
         });
-        this._activityProgress.set_child(this._activityBarFill);
+        this._activityProgress.add_child(this._activityBarFill);
+        this._activityProgress.add_child(new St.Widget({x_expand: true}));
         footer.add_child(this._activityProgress);
         this._activityStop = new St.Button({
             style: 'background-color: #26292e; border-radius: 11px;',
