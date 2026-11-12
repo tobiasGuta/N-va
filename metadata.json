@@ -1,12 +1,13 @@
 {
   "uuid": "nova@tobiasguta.github.io",
   "name": "Nova",
-  "description": "A minimal Dynamic Island for GNOME: fluid animations and MPRIS media controls.",
+  "description": "A floating GNOME Dynamic Island with clock, media, live activities, and preferences.",
   "shell-version": [
     "49",
     "50",
     "51"
   ],
   "url": "https://github.com/tobiasGuta/N-va",
-  "version": 1
+  "version": 5,
+  "settings-schema": "org.gnome.shell.extensions.nova"
 }

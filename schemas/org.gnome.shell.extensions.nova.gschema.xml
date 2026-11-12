@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.nova" path="/org/gnome/shell/extensions/nova/">
+    <key name="floating-panel" type="b"><default>true</default><summary>Transparent GNOME top panel</summary></key>
+    <key name="compact-width" type="i"><default>166</default><range min="132" max="240"/></key>
+    <key name="expanded-width" type="i"><default>328</default><range min="300" max="430"/></key>
+    <key name="animation-duration" type="i"><default>240</default><range min="100" max="500"/></key>
+    <key name="accent-color" type="s"><default>'#baff80'</default></key>
+    <key name="show-notifications" type="b"><default>true</default></key>
+    <key name="show-volume" type="b"><default>true</default></key>
+    <key name="show-brightness" type="b"><default>true</default></key>
+    <key name="show-recording" type="b"><default>true</default></key>
+    <key name="show-downloads" type="b"><default>true</default></key>
+    <key name="show-timer" type="b"><default>true</default></key>
+  </schema>
+</schemalist>

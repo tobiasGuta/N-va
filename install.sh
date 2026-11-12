@@ -11,7 +11,7 @@ if ! command -v gnome-extensions >/dev/null 2>&1; then
 fi
 
 mkdir -p "${TARGET_DIR}/lib"
-for file in extension.js metadata.json stylesheet.css; do
+for file in extension.js metadata.json stylesheet.css prefs.js; do
     install -m 0644 "${SOURCE_DIR}/${file}" "${TARGET_DIR}/${file}"
 done
 # Always install every runtime module so adding a new import cannot silently
@@ -19,6 +19,16 @@ done
 for file in "${SOURCE_DIR}"/lib/*.js; do
     install -m 0644 "${file}" "${TARGET_DIR}/lib/$(basename -- "${file}")"
 done
+
+# Compile the extension-local GSettings schema used by the preferences UI.
+if ! command -v glib-compile-schemas >/dev/null 2>&1; then
+    echo "Nova needs glib-compile-schemas from GLib." >&2
+    exit 1
+fi
+mkdir -p "${TARGET_DIR}/schemas"
+install -m 0644 "${SOURCE_DIR}/schemas/org.gnome.shell.extensions.nova.gschema.xml" \
+    "${TARGET_DIR}/schemas/org.gnome.shell.extensions.nova.gschema.xml"
+glib-compile-schemas --strict "${TARGET_DIR}/schemas"
 
 echo "Installed Nova to ${TARGET_DIR}"
 echo "Log out and back in (Wayland), then run:"
