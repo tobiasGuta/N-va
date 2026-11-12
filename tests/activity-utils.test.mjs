@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {percentage, remainingSeconds, durationLabel, formatBytes, safeTitle, isPartialDownload} from '../lib/activity-utils.js';
+import {backlightLevel, percentage, remainingSeconds, durationLabel, formatBytes, safeTitle, isPartialDownload} from '../lib/activity-utils.js';
 
 test('clamps percentages and refuses invalid ranges', () => {
     assert.equal(percentage(50), 50);
@@ -36,4 +36,13 @@ test('download filename normalization supports browser temp extensions', () => {
         assert.equal(isPartialDownload(name), true);
         assert.equal(name.replace(/\.(crdownload|part|download)$/i, ''), 'report.pdf');
     }
+});
+
+test('Mutter Backlight entries support non-0 minima and unsupported displays', () => {
+    assert.equal(backlightLevel([2, [
+        {connector: 'HDMI-A-1', active: true},
+        {connector: 'eDP-1', active: true, min: 200, max: 1800, value: 1000},
+    ]]), 50);
+    assert.equal(backlightLevel([2, [{active: false, min: 0, max: 100, value: 50}]]), null);
+    assert.equal(backlightLevel(null), null);
 });
