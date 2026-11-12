@@ -82,7 +82,9 @@ export const FLOATING_PANEL = false;
 
 Then run `bash install.sh` and log out/back in. Disabling Nova also restores the original panel styling.
 
-**Note:** Custom GNOME themes and other panel-styling extensions may override transparency, and GNOME still reserves panel space for maximized windows.
+**Note:** Custom GNOME themes and other panel-styling extensions may override transparency. If you use **Blur my Shell**, its **Panel** blur or background layer may still paint behind Nova's transparent panel. For testing, disable only Blur my Shell's **Panel** blur in its preferences; keep its other blur effects enabled if you like. GNOME still reserves panel space for maximized windows, so transparency reveals whatever is behind the bar (often a window's dark header), not necessarily your wallpaper.
+
+Nova now avoids the unsupported `Main.panel 'allocation-changed'` signal that previously caused an extension startup error.
 
 ## Development
 

@@ -61,13 +61,26 @@ function clipped(text, max) {
 
 export default class NovaExtension extends Extension {
     enable() {
+        // Roll back partially applied shell changes when enable fails.
+        try {
+            this._enable();
+        } catch (error) {
+            try {
+                this.disable();
+            } catch (cleanupError) {
+                console.warn('Nova: enable cleanup failed: ' + cleanupError.message);
+            }
+            throw error;
+        }
+    }
+
+    _enable() {
         this._expanded = false;
         this._pinned = false;
         this._playerState = null;
         this._collapseSource = 0;
         this._revealSource = 0;
         this._monitorChangedId = 0;
-        this._panelAllocationId = 0;
         this._clockSource = 0;
         this._monthOffset = 0;
         this._lastDayKey = null;
@@ -99,10 +112,8 @@ export default class NovaExtension extends Extension {
         this._monitorChangedId = Main.layoutManager.connect(
             'monitors-changed', () => this._position(false)
         );
-        // GNOME panel height can change with themes, scaling or extensions.
-        this._panelAllocationId = Main.panel.connect(
-            'allocation-changed', () => this._position(false)
-        );
+        // Panel is a GJS class, not a Clutter actor with an
+        // 'allocation-changed' signal. Reposition on monitor and mode changes.
         this._position(false);
 
         this._media = new MprisService(player => this._showPlayer(player));
@@ -653,10 +664,6 @@ export default class NovaExtension extends Extension {
         if (this._monitorChangedId) {
             Main.layoutManager.disconnect(this._monitorChangedId);
             this._monitorChangedId = 0;
-        }
-        if (this._panelAllocationId) {
-            Main.panel.disconnect(this._panelAllocationId);
-            this._panelAllocationId = 0;
         }
 
         if (FLOATING_PANEL) {

@@ -27,3 +27,15 @@ test('clock and music modes have independent expanded layouts', () => {
     assert.match(extension, /this\._musicView\.visible = playing/);
     assert.match(extension, /this\._calendarView\.visible = !playing/);
 });
+
+test('never connects to unsupported Main.panel allocation-changed signal', () => {
+    assert.doesNotMatch(extension,
+        /Main\.panel\.connect\(\s*['"]allocation-changed['"]/);
+    assert.match(extension, /'monitors-changed'/);
+});
+
+test('enable failure rolls back panel and clock changes', () => {
+    assert.match(extension, /this\._enable\(\)/);
+    assert.match(extension, /this\.disable\(\)/);
+    assert.match(extension, /this\._oldPanelStyle/);
+});
