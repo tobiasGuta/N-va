@@ -6,6 +6,8 @@ import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import {MprisService} from './lib/mpris.js';
+import {ArtworkLoader} from './lib/artwork.js';
+import {waveFrame} from './lib/waveform.js';
 import {getIslandGeometry} from './lib/geometry.js';
 import {FLOATING_PANEL} from './lib/config.js';
 import {activeMode, compactClock, fullClock, longDate, monthCells, monthLabel, weekdayLabels} from './lib/clock.js';
@@ -13,6 +15,7 @@ import {activeMode, compactClock, fullClock, longDate, monthCells, monthLabel, w
 const COMPACT_WIDTH = 166;
 const COMPACT_HEIGHT = 32;
 const COLLAPSE_DELAY_MS = 650;
+const WAVE_INTERVAL_MS = 180;
 
 function icon(name, styleClass = 'nova-icon', size = 15, color = '#f7f7f8') {
     return new St.Icon({
@@ -86,6 +89,11 @@ export default class NovaExtension extends Extension {
         this._lastDayKey = null;
         this._displayMode = 'clock';
         this._oldPanelStyle = null;
+        this._artUrl = null;
+        this._artGeneration = 0;
+        this._waveSource = 0;
+        this._waveStep = 0;
+        this._artLoader = null;
 
         this._buildUi();
         Main.layoutManager.addChrome(this._island, {
@@ -116,6 +124,7 @@ export default class NovaExtension extends Extension {
         // 'allocation-changed' signal. Reposition on monitor and mode changes.
         this._position(false);
 
+        this._artLoader = new ArtworkLoader();
         this._media = new MprisService(player => this._showPlayer(player));
         this._media.start();
 
@@ -154,10 +163,16 @@ export default class NovaExtension extends Extension {
             y_expand: true,
             y_align: Clutter.ActorAlign.CENTER,
         });
-        this._compactIcon = icon(
+        this._compactArt = new St.Bin({
+            width: 16,
+            height: 16,
+            x_align: Clutter.ActorAlign.CENTER,
+            y_align: Clutter.ActorAlign.CENTER,
+        });
+        this._compactArt.set_child(icon(
             'preferences-system-time-symbolic', 'nova-compact-icon', 13, '#baff80'
-        );
-        compactContent.add_child(this._compactIcon);
+        ));
+        compactContent.add_child(this._compactArt);
         this._compactText = label('NOVA', 'nova-compact-title');
         this._compactText.style = 'font-size: 11px; font-weight: 700; color: #f8fafc;';
         this._compactText.x_expand = true;
@@ -171,6 +186,26 @@ export default class NovaExtension extends Extension {
             y_align: Clutter.ActorAlign.CENTER,
         });
         compactContent.add_child(this._statusDot);
+        this._wave = new St.BoxLayout({
+            orientation: Clutter.Orientation.HORIZONTAL,
+            style: 'spacing: 2px;',
+            y_align: Clutter.ActorAlign.CENTER,
+            width: 25,
+            height: 16,
+            visible: false,
+        });
+        this._waveBars = [];
+        for (let index = 0; index < 4; index++) {
+            const bar = new St.Widget({
+                width: 3,
+                height: 4,
+                y_align: Clutter.ActorAlign.CENTER,
+                style: 'background-color: #baff80; border-radius: 2px;',
+            });
+            this._wave.add_child(bar);
+            this._waveBars.push(bar);
+        }
+        compactContent.add_child(this._wave);
 
         this._compactView = new St.Button({
             style_class: 'nova-compact',
@@ -218,18 +253,19 @@ export default class NovaExtension extends Extension {
             y_align: Clutter.ActorAlign.CENTER,
         });
 
-        const artwork = new St.Bin({
+        this._artwork = new St.Bin({
             style_class: 'nova-artwork',
             style: 'background-color: #202a25; border-radius: 11px;',
             width: 46,
             height: 46,
+            clip_to_allocation: true,
             x_align: Clutter.ActorAlign.CENTER,
             y_align: Clutter.ActorAlign.CENTER,
         });
-        artwork.set_child(icon(
+        this._artwork.set_child(icon(
             'audio-x-generic-symbolic', 'nova-artwork-icon', 23, '#baff80'
         ));
-        header.add_child(artwork);
+        header.add_child(this._artwork);
 
         const texts = new St.BoxLayout({
             orientation: Clutter.Orientation.VERTICAL,
@@ -261,6 +297,25 @@ export default class NovaExtension extends Extension {
         this._badge = label('READY', 'nova-footer-label');
         this._badge.style = 'font-size: 9px; font-weight: 700; color: #baff80;';
         footer.add_child(this._badge);
+        // Matching decorative wave in the expanded player.
+        this._waveExpanded = new St.BoxLayout({
+            orientation: Clutter.Orientation.HORIZONTAL,
+            style: 'spacing: 2px;',
+            width: 25,
+            height: 16,
+            y_align: Clutter.ActorAlign.CENTER,
+        });
+        for (let index = 0; index < 4; index++) {
+            const bar = new St.Widget({
+                width: 3,
+                height: 4,
+                y_align: Clutter.ActorAlign.CENTER,
+                style: 'background-color: #baff80; border-radius: 2px;',
+            });
+            this._waveExpanded.add_child(bar);
+            this._waveBars.push(bar);
+        }
+        footer.add_child(this._waveExpanded);
 
         const controls = new St.BoxLayout({
             orientation: Clutter.Orientation.HORIZONTAL,
@@ -314,9 +369,8 @@ export default class NovaExtension extends Extension {
 
         this._musicView.visible = playing;
         this._calendarView.visible = !playing;
-        this._statusDot.visible = playing;
-        this._compactIcon.icon_name = playing
-            ? 'audio-x-generic-symbolic' : 'preferences-system-time-symbolic';
+        this._statusDot.visible = false;
+        this._wave.visible = playing;
         this._compactView.set_accessible_name(
             playing ? 'Open Nova music controls' : 'Open Nova calendar'
         );
@@ -329,6 +383,12 @@ export default class NovaExtension extends Extension {
             this._badge.text = 'NOW PLAYING';
         }
 
+        this._updateArt(playing ? player?.artUrl : null);
+        if (playing)
+            this._startWave();
+        else
+            this._stopWave();
+
         this._playPause.set_child(icon(
             'media-playback-pause-symbolic', 'nova-control-icon', 15, '#111315'
         ));
@@ -340,12 +400,114 @@ export default class NovaExtension extends Extension {
         this._playPause.can_focus = this._playPause.reactive;
         this._next.reactive = player?.canNext ?? false;
         this._next.can_focus = this._next.reactive;
-
-        for (const button of [this._previous, this._playPause, this._next]) {
+        for (const button of [this._previous, this._playPause, this._next])
             button.opacity = button.reactive ? 255 : 95;
+
+        if (changed) {
+            if (this._expanded) {
+                const incoming = playing ? this._musicView : this._calendarView;
+                incoming.remove_all_transitions();
+                incoming.opacity = this._reduceMotion() ? 255 : 0;
+                this._position(true);
+                if (!this._reduceMotion()) {
+                    incoming.ease({
+                        opacity: 255,
+                        duration: 235,
+                        mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                    });
+                }
+            } else if (!this._reduceMotion()) {
+                this._compactView.remove_all_transitions();
+                this._compactView.opacity = 85;
+                this._compactView.ease({
+                    opacity: 255,
+                    duration: 250,
+                    mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                });
+            }
         }
-        if (changed && this._expanded)
-            this._position(true);
+    }
+
+    _reduceMotion() {
+        return Boolean(St.ReducedMotion &&
+            St.Settings.get().reducedMotion === St.ReducedMotion.REDUCE);
+    }
+
+    _renderArtwork(gicon = null) {
+        if (!this._artwork || !this._compactArt)
+            return;
+        const picture = (size, fallback) => gicon
+            ? new St.Icon({
+                gicon,
+                icon_size: size,
+                x_align: Clutter.ActorAlign.CENTER,
+                y_align: Clutter.ActorAlign.CENTER,
+            })
+            : icon(fallback, 'nova-art-fallback',
+                size < 20 ? 13 : 23, '#baff80');
+
+        this._artwork.set_child(picture(44, 'audio-x-generic-symbolic'));
+        const fallback = this._displayMode === 'music'
+            ? 'audio-x-generic-symbolic' : 'preferences-system-time-symbolic';
+        this._compactArt.set_child(picture(15, fallback));
+    }
+
+    _updateArt(url) {
+        const artUrl = typeof url === 'string' && url.length <= 2048
+            ? url : null;
+        if (this._artUrl === artUrl)
+            return;
+
+        this._artUrl = artUrl;
+        const generation = ++this._artGeneration;
+        this._renderArtwork();
+        if (!artUrl || !this._artLoader)
+            return;
+
+        void this._artLoader.load(artUrl).then(gicon => {
+            if (!this._island || generation !== this._artGeneration ||
+                this._displayMode !== 'music' || !gicon)
+                return;
+            this._renderArtwork(gicon);
+        }).catch(error => {
+            if (this._island)
+                console.debug('Nova: cover unavailable: ' + error.message);
+        });
+    }
+
+    _startWave() {
+        if (this._waveSource || this._reduceMotion())
+            return;
+        this._waveStep = 0;
+        this._waveSource = GLib.timeout_add(
+            GLib.PRIORITY_DEFAULT, WAVE_INTERVAL_MS, () => {
+                if (!this._island || this._displayMode !== 'music') {
+                    this._waveSource = 0;
+                    return GLib.SOURCE_REMOVE;
+                }
+                const frame = waveFrame(this._waveStep);
+                for (const [index, bar] of this._waveBars.entries()) {
+                    bar.ease({
+                        height: frame[index % frame.length],
+                        duration: WAVE_INTERVAL_MS - 28,
+                        mode: Clutter.AnimationMode.EASE_IN_OUT_SINE,
+                    });
+                }
+                this._waveStep++;
+                return GLib.SOURCE_CONTINUE;
+            }
+        );
+    }
+
+    _stopWave() {
+        if (this._waveSource) {
+            GLib.Source.remove(this._waveSource);
+            this._waveSource = 0;
+        }
+        for (const bar of this._waveBars ?? []) {
+            bar.remove_all_transitions();
+            bar.height = 4;
+        }
     }
 
     _tickClock() {
@@ -611,10 +773,7 @@ export default class NovaExtension extends Extension {
 
         this._island.remove_all_transitions();
 
-        // GNOME 51 exposes reduced-motion support; older versions don't.
-        const reducedMotion = St.ReducedMotion &&
-            St.Settings.get().reducedMotion === St.ReducedMotion.REDUCE;
-        if (!animate || reducedMotion) {
+        if (!animate || this._reduceMotion()) {
             this._island.set_position(x, y);
             this._island.set_size(width, height);
             return;
@@ -658,6 +817,10 @@ export default class NovaExtension extends Extension {
         }
         this._cancelCollapse();
         this._cancelReveal();
+        this._stopWave();
+        ++this._artGeneration;
+        this._artLoader?.destroy();
+        this._artLoader = null;
         this._media?.destroy();
         this._media = null;
 
@@ -693,7 +856,11 @@ export default class NovaExtension extends Extension {
         this._calendarTime = null;
         this._calendarDate = null;
         this._compactText = null;
-        this._compactIcon = null;
+        this._compactArt = null;
+        this._artwork = null;
+        this._wave = null;
+        this._waveExpanded = null;
+        this._waveBars = null;
         this._statusDot = null;
         this._badge = null;
         this._pinButton = null;
