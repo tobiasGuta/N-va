@@ -450,6 +450,11 @@ export default class NovaExtension extends Extension {
     _handleNativeOsd(args) {
         if (!this._osdHookEnabled || !this._island || !this._settings)
             return false;
+        // Leave GNOME's OSD available when chrome is hidden in fullscreen
+        // or the session is locked; otherwise the user may see no feedback.
+        if (!this._island.visible ||
+            Main.sessionMode?.isLocked)
+            return false;
         // GNOME 49+ showAll(icon,label,level,max) or
         // showOne(monitor,icon,label,level,max). Locate the GIcon.
         for (let i = 0; i < args.length; i++) {

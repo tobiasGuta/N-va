@@ -80,3 +80,8 @@ test('native OSD events show Nova preview, not silent suppression', () => {
     assert.match(extension, /const activity = osdPreview\(/);
     assert.match(extension, /this\._showPreview\(activity\)/);
 });
+
+test('Nova does not suppress native OSD while the island is hidden or locked', () => {
+    assert.match(extension, /!this\._island\.visible/);
+    assert.match(extension, /Main\.sessionMode\?\.isLocked/);
+});
