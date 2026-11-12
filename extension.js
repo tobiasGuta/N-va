@@ -112,7 +112,7 @@ export default class NovaExtension extends Extension {
         const compactContent = new St.BoxLayout({
             orientation: Clutter.Orientation.HORIZONTAL,
             style_class: 'nova-compact-row',
-            spacing: 8,
+            style: 'spacing: 8px;',
             x_expand: true,
             y_expand: true,
             y_align: Clutter.ActorAlign.CENTER,
@@ -153,8 +153,7 @@ export default class NovaExtension extends Extension {
         this._expandedView = new St.BoxLayout({
             orientation: Clutter.Orientation.VERTICAL,
             style_class: 'nova-expanded',
-            style: 'padding: 13px 14px 11px;',
-            spacing: 11,
+            style: 'padding: 13px 14px 11px; spacing: 11px;',
             x_expand: true,
             y_expand: true,
             x_align: Clutter.ActorAlign.FILL,
@@ -165,7 +164,7 @@ export default class NovaExtension extends Extension {
         const header = new St.BoxLayout({
             orientation: Clutter.Orientation.HORIZONTAL,
             style_class: 'nova-header',
-            spacing: 11,
+            style: 'spacing: 11px;',
             x_expand: true,
             y_align: Clutter.ActorAlign.CENTER,
         });
@@ -186,7 +185,7 @@ export default class NovaExtension extends Extension {
         const texts = new St.BoxLayout({
             orientation: Clutter.Orientation.VERTICAL,
             style_class: 'nova-track-texts',
-            spacing: 3,
+            style: 'spacing: 3px;',
             x_expand: true,
             y_align: Clutter.ActorAlign.CENTER,
         });
@@ -248,7 +247,7 @@ export default class NovaExtension extends Extension {
         const footer = new St.BoxLayout({
             orientation: Clutter.Orientation.HORIZONTAL,
             style_class: 'nova-footer',
-            spacing: 6,
+            style: 'spacing: 6px;',
             x_expand: true,
             y_align: Clutter.ActorAlign.CENTER,
         });
@@ -259,7 +258,7 @@ export default class NovaExtension extends Extension {
         const controls = new St.BoxLayout({
             orientation: Clutter.Orientation.HORIZONTAL,
             style_class: 'nova-controls',
-            spacing: 9,
+            style: 'spacing: 9px;',
             x_expand: true,
             x_align: Clutter.ActorAlign.END,
         });
