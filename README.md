@@ -4,7 +4,7 @@
 
 Nova is an early-stage GNOME Shell extension with a compact clock and calendar by default. When an MPRIS player actively plays audio/video, it switches to a music island. Hover to expand; use the discreet pin icon to keep it open.
 
-## Features in v0.5.1
+## Features in v0.5.2
 
 - Compact, centered black pill fitted to the GNOME panel height, with smooth expand/collapse and content fade-in.
 - Default compact clock with local time and weekday; expanded month-view calendar with navigation.
@@ -27,7 +27,7 @@ Nova is an early-stage GNOME Shell extension with a compact clock and calendar b
 - Restores the original GNOME center clock when disabled.
 - Respects GNOME 51 reduced-motion preference; no AI or subprocesses. Optional HTTPS requests occur only for remote cover art during playback.
 
-**Status:** Experimental v0.5.1 release targeting GNOME Shell 49–51. The new activities and preferences use GNOME APIs that may vary with Fedora/desktop extensions and need live Fedora testing. The calendar is local-only (no appointments). Nova can replace ordinary banners when the optional Nova-only setting is enabled; GNOME's critical alerts remain native.
+**Status:** Experimental v0.5.2 release targeting GNOME Shell 49–51. The new activities and preferences use GNOME APIs that may vary with Fedora/desktop extensions and need live Fedora testing. The calendar is local-only (no appointments). Nova can replace ordinary banners when the optional Nova-only setting is enabled; GNOME's critical alerts remain native.
 
 ## Install on Fedora GNOME
 
@@ -104,7 +104,7 @@ Adjust the compact/expanded widths, accent color (hex `#RRGGBB`), animation spee
 - **Notifications:** Nova previews regular GNOME notification titles. In **Nova-only notification banners** mode, it acknowledges the incoming normal alert before GNOME displays a second banner, while leaving the notification in GNOME's history. Critical alerts remain native. Disable the Nova-only switch to see both banners. If you previously turned off **Show notifications in Nova**, turn it back on in preferences; GSettings retains explicit choices across upgrades.
 - **Volume / brightness OSD:** GNOME normally shows its own OSD as well as Nova. The **Replace native volume/brightness OSD** preference now defaults to on for new installs. You can turn it off to keep GNOME's overlays. When enabled, Nova reads the volume/brightness percentage from the same GNOME OSD event, renders it directly, and suppresses only that native popup. Unsupported GNOME overlays remain intact. Existing saved settings may override the new default; check the preferences switch if two popups remain. Disabling Nova restores the original GNOME methods.
 - **Volume:** Mirrors output-volume changes from compatible GNOME Quick Settings stream objects.
-- **Brightness:** Reads Mutter's modern `org.gnome.Mutter.DisplayConfig.Backlight` property. Unsupported monitors or GNOME versions quietly skip the preview.
+- **Brightness:** Uses GNOME's active Quick Settings slider as the authoritative source to avoid incorrect jumps between readings. Falls back to Mutter's `org.gnome.Mutter.DisplayConfig.Backlight` property only when the slider is unavailable. Some hardware may not expose either.
 - **Screen recording:** Tracks GNOME Shell's built-in screencast status, not OBS, browser sharing, or other third-party recorders.
 - **Downloads:** Watches `~/Downloads` for activity, including Firefox `.part` and Chromium `.crdownload` files. Shows bytes received where available, **not an exact percentage**; the browser owns total-size and remaining-time information. Other download folders are not watched. When the folder monitor reports a temporary file being renamed, moved, or removed after a valid final file exists, Nova shows **Download complete**. It checks that recognized temporary sibling files no longer exist; this is still best-effort and depends on the browser's file behavior.
 
