@@ -2,19 +2,22 @@
 
 **A tiny Dynamic Island for GNOME. No AI, no background daemon, no Electron.**
 
-Nova is an early-stage GNOME Shell extension that puts a dark, interactive pill at the top center of your desktop. Hover or click to expand it; control compatible music players through the standard Linux MPRIS D-Bus interface.
+Nova is an early-stage GNOME Shell extension with a compact clock and calendar by default. When an MPRIS player actively plays audio/video, it switches to a music island. Hover to expand; PIN to keep it open.
 
-## Features in v0.2
+## Features in v0.3
 
 - Compact, centered black pill fitted to the GNOME panel height, with smooth expand/collapse and content fade-in.
-- A rounded black expanded card showing the current track and artist, styled consistently even on customized GNOME Shell themes.
+- Default compact clock with local time and weekday; expanded month-view calendar with navigation.
+- Music card only while a compatible MPRIS player reports `Playing`; pauses and stops return to the clock.
+- Floating-panel mode removes GNOME's top bar background but retains left/right controls.
+- A rounded black expanded media card, styled independently of custom GNOME themes.
 - Play/pause, previous and next buttons (when the player supports them).
 - Hover to expand; use the PIN button to keep Nova open while using other apps; close to collapse.
 - Automatically discovers MPRIS players and follows playback changes.
 - Restores the original GNOME center clock when disabled.
 - Respects GNOME 51 reduced-motion preference; no network calls, AI, or subprocesses.
 
-**Status:** Early development release. Source targets GNOME Shell 49, 50 and 51, but has not yet been runtime-tested on Fedora. Notifications, artwork, timers, and configurable positioning are not implemented yet.
+**Status:** Early development release. Source targets GNOME Shell 49–51; automated tests pass, but the transparent panel and calendar still need runtime testing on Fedora. The calendar shows the local month (not appointments or notification events). Album art and notification previews are not implemented yet.
 
 ## Install on Fedora GNOME
 
@@ -55,7 +58,7 @@ rm -r "$HOME/.local/share/gnome-shell/extensions/nova@tobiasguta.github.io"
 
 ## Music player compatibility
 
-Nova reads `org.mpris.MediaPlayer2.*` services from the user's session D-Bus. Spotify, VLC and some browsers expose MPRIS interfaces. Browser media support depends on the browser's settings and the current playback session. A stopped player may still be displayed until it disconnects.
+Nova reads `org.mpris.MediaPlayer2.*` services from the user's session D-Bus. Spotify, VLC and some browsers expose MPRIS interfaces. Browser media support depends on the browser's settings and the current playback session. Nova displays music only when the selected player is actively playing, and returns to the clock when playback pauses or stops.
 
 Useful optional diagnostic tool:
 
@@ -66,6 +69,20 @@ playerctl metadata
 ```
 
 `playerctl` is **not** a Nova runtime dependency.
+
+## Floating top bar
+
+By default, Nova makes the **existing** GNOME top bar transparent. It does not remove the panel, icons, indicators, or their click targets.
+
+To keep the usual solid GNOME panel, edit `lib/config.js` and set:
+
+```js
+export const FLOATING_PANEL = false;
+```
+
+Then run `bash install.sh` and log out/back in. Disabling Nova also restores the original panel styling.
+
+**Note:** Custom GNOME themes and other panel-styling extensions may override transparency, and GNOME still reserves panel space for maximized windows.
 
 ## Development
 
@@ -89,6 +106,8 @@ journalctl --user -b /usr/bin/gnome-shell --no-pager | grep -i nova
 extension.js       top-center pill, hover/click, animations, GNOME lifecycle
 stylesheet.css     dark pill styling
 lib/geometry.js    panel-aware island sizing and anchoring
+lib/clock.js       clock formatting, calendar dates, and display-mode logic
+lib/config.js      opt-out for floating panel background
 lib/mpris.js       session D-Bus discovery, updates, media commands
 lib/player.js      pure media state normalization / player selection
 tests/             pure JavaScript regression tests
@@ -99,6 +118,7 @@ All media commands go to the selected MPRIS player over the session bus. Nova ne
 
 ## Roadmap
 
+- Calendar events integration and locale-specific first day of week.
 - Artwork with a privacy-conscious loading path.
 - Optional notification previews without suppressing GNOME's native banners.
 - Timer/live activities and user preferences.

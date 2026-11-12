@@ -7,6 +7,8 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import {MprisService} from './lib/mpris.js';
 import {getIslandGeometry} from './lib/geometry.js';
+import {FLOATING_PANEL} from './lib/config.js';
+import {activeMode, compactClock, fullClock, longDate, monthCells, monthLabel, weekdayLabels} from './lib/clock.js';
 
 const COMPACT_WIDTH = 166;
 const COMPACT_HEIGHT = 32;
@@ -66,6 +68,11 @@ export default class NovaExtension extends Extension {
         this._revealSource = 0;
         this._monitorChangedId = 0;
         this._panelAllocationId = 0;
+        this._clockSource = 0;
+        this._monthOffset = 0;
+        this._lastDayKey = null;
+        this._displayMode = 'clock';
+        this._oldPanelStyle = null;
 
         this._buildUi();
         Main.layoutManager.addChrome(this._island, {
@@ -78,6 +85,17 @@ export default class NovaExtension extends Extension {
         this._clockWasVisible = this._clockActor?.visible ?? null;
         this._clockActor?.hide();
 
+        // Only the panel's visual background is removed. All left/right
+        // indicators and their click targets remain in the GNOME panel.
+        if (FLOATING_PANEL) {
+            this._oldPanelStyle = Main.panel.get_style();
+            Main.panel.add_style_class_name('nova-floating-panel');
+            Main.panel.set_style(
+                (this._oldPanelStyle ?? '') +
+                ' background-color: transparent; border: none; box-shadow: none;'
+            );
+        }
+
         this._monitorChangedId = Main.layoutManager.connect(
             'monitors-changed', () => this._position(false)
         );
@@ -89,6 +107,14 @@ export default class NovaExtension extends Extension {
 
         this._media = new MprisService(player => this._showPlayer(player));
         this._media.start();
+
+        this._tickClock();
+        this._clockSource = GLib.timeout_add_seconds(
+            GLib.PRIORITY_DEFAULT, 15, () => {
+                this._tickClock();
+                return GLib.SOURCE_CONTINUE;
+            }
+        );
     }
 
     _buildUi() {
@@ -117,20 +143,23 @@ export default class NovaExtension extends Extension {
             y_expand: true,
             y_align: Clutter.ActorAlign.CENTER,
         });
-        compactContent.add_child(icon(
-            'audio-x-generic-symbolic', 'nova-compact-icon', 13, '#baff80'
-        ));
+        this._compactIcon = icon(
+            'preferences-system-time-symbolic', 'nova-compact-icon', 13, '#baff80'
+        );
+        compactContent.add_child(this._compactIcon);
         this._compactText = label('NOVA', 'nova-compact-title');
         this._compactText.style = 'font-size: 11px; font-weight: 700; color: #f8fafc;';
         this._compactText.x_expand = true;
         compactContent.add_child(this._compactText);
-        compactContent.add_child(new St.Bin({
+        this._statusDot = new St.Bin({
             style_class: 'nova-status-dot',
             style: 'background-color: #baff80; border-radius: 4px;',
             width: 5,
             height: 5,
+            visible: false,
             y_align: Clutter.ActorAlign.CENTER,
-        }));
+        });
+        compactContent.add_child(this._statusDot);
 
         this._compactView = new St.Button({
             style_class: 'nova-compact',
@@ -144,9 +173,9 @@ export default class NovaExtension extends Extension {
             x_align: Clutter.ActorAlign.FILL,
             y_align: Clutter.ActorAlign.FILL,
         });
-        this._compactView.set_accessible_name('Keep Nova open');
+        this._compactView.set_accessible_name('Open Nova calendar');
         this._compactView.connect('clicked', () => {
-            this._pinned = true;
+            this._setPinned(true);
             this._setExpanded(true);
         });
 
@@ -158,6 +187,15 @@ export default class NovaExtension extends Extension {
             y_expand: true,
             x_align: Clutter.ActorAlign.FILL,
             y_align: Clutter.ActorAlign.FILL,
+            visible: false,
+        });
+
+        this._musicView = new St.BoxLayout({
+            orientation: Clutter.Orientation.VERTICAL,
+            style_class: 'nova-music',
+            style: 'spacing: 11px;',
+            x_expand: true,
+            y_expand: true,
             visible: false,
         });
 
@@ -197,52 +235,10 @@ export default class NovaExtension extends Extension {
         texts.add_child(this._artist);
         header.add_child(texts);
 
-        const close = new St.Button({
-            style_class: 'nova-close',
-            style: 'background-color: #1a1c20; border-radius: 13px;',
-            width: 25,
-            height: 25,
-            can_focus: true,
-            reactive: true,
-            x_align: Clutter.ActorAlign.CENTER,
-            y_align: Clutter.ActorAlign.START,
-            child: icon('window-close-symbolic', 'nova-close-icon', 12, '#c8cbd0'),
-        });
-        close.set_accessible_name('Close Nova');
-        close.connect('clicked', () => {
-            this._pinned = false;
-            this._setExpanded(false);
-        });
-        this._pinButton = new St.Button({
-            style_class: 'nova-pin',
-            style: 'background-color: #1a1c20; border-radius: 11px; ' +
-                'color: #b9bec7; font-size: 9px; font-weight: 700;',
-            width: 31,
-            height: 25,
-            can_focus: true,
-            reactive: true,
-            x_align: Clutter.ActorAlign.CENTER,
-            y_align: Clutter.ActorAlign.START,
-            child: label('PIN', 'nova-pin-label'),
-        });
-        this._pinButton.set_accessible_name('Keep Nova expanded');
-        this._pinButton.connect('clicked', () => {
-            this._pinned = !this._pinned;
-            this._pinButton.set_style(this._pinned
-                ? 'background-color: #baff80; border-radius: 11px; ' +
-                    'color: #111315; font-size: 9px; font-weight: 700;'
-                : 'background-color: #1a1c20; border-radius: 11px; ' +
-                    'color: #b9bec7; font-size: 9px; font-weight: 700;');
-            this._pinButton.set_accessible_name(this._pinned
-                ? 'Unpin Nova' : 'Keep Nova expanded');
-            if (this._pinned)
-                this._cancelCollapse();
-            else if (!this._island.hover)
-                this._scheduleCollapse();
-        });
+        this._pinButton = this._makePinButton();
         header.add_child(this._pinButton);
-        header.add_child(close);
-        this._expandedView.add_child(header);
+        header.add_child(this._makeCloseButton());
+        this._musicView.add_child(header);
 
         const footer = new St.BoxLayout({
             orientation: Clutter.Orientation.HORIZONTAL,
@@ -278,7 +274,10 @@ export default class NovaExtension extends Extension {
         controls.add_child(this._playPause);
         controls.add_child(this._next);
         footer.add_child(controls);
-        this._expandedView.add_child(footer);
+        this._musicView.add_child(footer);
+        this._expandedView.add_child(this._musicView);
+        this._calendarView = this._buildCalendar();
+        this._expandedView.add_child(this._calendarView);
 
         this._island.add_child(this._compactView);
         this._island.add_child(this._expandedView);
@@ -297,22 +296,32 @@ export default class NovaExtension extends Extension {
 
     _showPlayer(player) {
         this._playerState = player;
-        const playing = player?.status === 'Playing';
-        const title = player?.title ?? 'Nothing playing';
-        const artist = player?.artist ?? 'Start a music player';
+        const mode = activeMode(player);
+        const changed = this._displayMode !== mode;
+        this._displayMode = mode;
+        const playing = mode === 'music';
 
-        this._compactText.text = player ?
-            clipped(title, 17) : 'NOVA';
-        this._title.text = clipped(title, 32);
-        this._artist.text = clipped(artist, 39);
+        this._musicView.visible = playing;
+        this._calendarView.visible = !playing;
+        this._statusDot.visible = playing;
+        this._compactIcon.icon_name = playing
+            ? 'audio-x-generic-symbolic' : 'preferences-system-time-symbolic';
+        this._compactView.set_accessible_name(
+            playing ? 'Open Nova music controls' : 'Open Nova calendar'
+        );
+        this._compactText.text = playing
+            ? clipped(player.title, 17) : compactClock(new Date());
+
+        if (playing) {
+            this._title.text = clipped(player.title, 32);
+            this._artist.text = clipped(player.artist, 39);
+            this._badge.text = 'NOW PLAYING';
+        }
+
         this._playPause.set_child(icon(
-            playing ? 'media-playback-pause-symbolic' :
-                'media-playback-start-symbolic',
-            'nova-control-icon', 15, '#111315'
+            'media-playback-pause-symbolic', 'nova-control-icon', 15, '#111315'
         ));
-        this._playPause.set_accessible_name(playing ? 'Pause' : 'Play');
-        this._badge.text = !player ? 'NO MEDIA' :
-            playing ? 'NOW PLAYING' : 'PAUSED';
+        this._playPause.set_accessible_name('Pause');
 
         this._previous.reactive = player?.canPrevious ?? false;
         this._previous.can_focus = this._previous.reactive;
@@ -322,11 +331,206 @@ export default class NovaExtension extends Extension {
         this._next.can_focus = this._next.reactive;
 
         for (const button of [this._previous, this._playPause, this._next]) {
-            if (button.reactive)
-                button.remove_style_pseudo_class('disabled');
-            else
-                button.add_style_pseudo_class('disabled');
             button.opacity = button.reactive ? 255 : 95;
+        }
+        if (changed && this._expanded)
+            this._position(true);
+    }
+
+    _tickClock() {
+        if (!this._calendarTime)
+            return;
+
+        const now = new Date();
+        this._calendarTime.text = fullClock(now);
+        this._calendarDate.text = longDate(now);
+        if (this._displayMode === 'clock')
+            this._compactText.text = compactClock(now);
+
+        if (this._lastDayKey !== now.toDateString()) {
+            this._lastDayKey = now.toDateString();
+            this._populateCalendar();
+        }
+    }
+
+    _setPinned(pinned) {
+        this._pinned = pinned;
+        for (const button of [this._pinButton, this._calendarPin]) {
+            if (!button)
+                continue;
+            button.style = pinned
+                ? 'background-color: #baff80; color: #111315; border-radius: 11px;'
+                : 'background-color: #1a1c20; color: #b9bec7; border-radius: 11px;';
+            button.set_accessible_name(
+                pinned ? 'Unpin Nova' : 'Keep Nova expanded'
+            );
+        }
+
+        if (pinned)
+            this._cancelCollapse();
+        else if (this._island && !this._island.hover)
+            this._scheduleCollapse();
+    }
+
+    _makePinButton() {
+        const button = new St.Button({
+            style_class: 'nova-pin',
+            style: 'background-color: #1a1c20; color: #b9bec7; border-radius: 11px;',
+            width: 31,
+            height: 25,
+            reactive: true,
+            can_focus: true,
+            x_align: Clutter.ActorAlign.CENTER,
+            y_align: Clutter.ActorAlign.CENTER,
+            child: label('PIN', 'nova-pin-label'),
+        });
+        button.set_accessible_name('Keep Nova expanded');
+        button.connect('clicked', () => this._setPinned(!this._pinned));
+        return button;
+    }
+
+    _makeCloseButton() {
+        const button = new St.Button({
+            style_class: 'nova-close',
+            style: 'background-color: #1a1c20; border-radius: 13px;',
+            width: 25,
+            height: 25,
+            reactive: true,
+            can_focus: true,
+            x_align: Clutter.ActorAlign.CENTER,
+            y_align: Clutter.ActorAlign.CENTER,
+            child: icon('window-close-symbolic', 'nova-close-icon', 12, '#c8cbd0'),
+        });
+        button.set_accessible_name('Collapse Nova');
+        button.connect('clicked', () => {
+            this._setPinned(false);
+            this._setExpanded(false);
+        });
+        return button;
+    }
+
+    _buildCalendar() {
+        const view = new St.BoxLayout({
+            orientation: Clutter.Orientation.VERTICAL,
+            style_class: 'nova-calendar',
+            style: 'spacing: 7px;',
+            x_expand: true,
+            y_expand: true,
+            visible: false,
+        });
+
+        const top = new St.BoxLayout({
+            orientation: Clutter.Orientation.HORIZONTAL,
+            style: 'spacing: 8px;',
+            x_expand: true,
+        });
+        const clockIcon = new St.Bin({
+            style: 'background-color: #202a25; border-radius: 11px;',
+            width: 41,
+            height: 41,
+            y_align: Clutter.ActorAlign.CENTER,
+            child: icon('preferences-system-time-symbolic', 'nova-clock-icon',
+                21, '#baff80'),
+        });
+        top.add_child(clockIcon);
+
+        const clockInfo = new St.BoxLayout({
+            orientation: Clutter.Orientation.VERTICAL,
+            style: 'spacing: 2px;',
+            x_expand: true,
+            y_align: Clutter.ActorAlign.CENTER,
+        });
+        this._calendarTime = label('--:--', 'nova-clock-time');
+        this._calendarTime.style =
+            'font-size: 17px; font-weight: 700; color: #f8fafc;';
+        this._calendarDate = label('', 'nova-clock-date');
+        this._calendarDate.style = 'font-size: 10px; color: #a6abb4;';
+        clockInfo.add_child(this._calendarTime);
+        clockInfo.add_child(this._calendarDate);
+        top.add_child(clockInfo);
+
+        this._calendarPin = this._makePinButton();
+        top.add_child(this._calendarPin);
+        top.add_child(this._makeCloseButton());
+        view.add_child(top);
+
+        const navigation = new St.BoxLayout({
+            orientation: Clutter.Orientation.HORIZONTAL,
+            style: 'spacing: 5px;',
+            x_expand: true,
+        });
+        this._monthTitle = label('', 'nova-month-title');
+        this._monthTitle.style = 'font-size: 12px; font-weight: 700; color: #f8fafc;';
+        this._monthTitle.x_expand = true;
+        navigation.add_child(this._monthTitle);
+
+        navigation.add_child(controlButton(
+            'go-previous-symbolic', 'Previous month', () => {
+                this._monthOffset--;
+                this._populateCalendar();
+            }
+        ));
+        navigation.add_child(controlButton(
+            'go-next-symbolic', 'Next month', () => {
+                this._monthOffset++;
+                this._populateCalendar();
+            }
+        ));
+        view.add_child(navigation);
+
+        const dayNames = new St.BoxLayout({
+            orientation: Clutter.Orientation.HORIZONTAL,
+            style: 'spacing: 3px;',
+        });
+        for (const day of weekdayLabels()) {
+            const dayLabel = label(day, 'nova-weekday');
+            dayLabel.width = 38;
+            dayLabel.style = 'font-size: 9px; color: #858b95;';
+            dayNames.add_child(dayLabel);
+        }
+        view.add_child(dayNames);
+
+        this._dayButtons = [];
+        for (let row = 0; row < 6; row++) {
+            const week = new St.BoxLayout({
+                orientation: Clutter.Orientation.HORIZONTAL,
+                style: 'spacing: 3px;',
+            });
+            for (let column = 0; column < 7; column++) {
+                const dayButton = new St.Button({
+                    style_class: 'nova-day',
+                    style: 'background-color: transparent; border-radius: 11px;',
+                    width: 38,
+                    height: 24,
+                    reactive: false,
+                    child: label('', 'nova-day-number'),
+                });
+                week.add_child(dayButton);
+                this._dayButtons.push(dayButton);
+            }
+            view.add_child(week);
+        }
+
+        this._populateCalendar();
+        return view;
+    }
+
+    _populateCalendar() {
+        if (!this._dayButtons)
+            return;
+        const today = new Date();
+        const month = new Date(
+            today.getFullYear(), today.getMonth() + this._monthOffset, 1
+        );
+        this._monthTitle.text = monthLabel(month);
+        for (const [index, cell] of monthCells(month, today).entries()) {
+            const button = this._dayButtons[index];
+            button.get_child().text = String(cell.day);
+            button.style = cell.isToday
+                ? 'background-color: #baff80; color: #101315; border-radius: 11px;'
+                : cell.inMonth
+                    ? 'background-color: transparent; color: #f8fafc; border-radius: 11px;'
+                    : 'background-color: transparent; color: #666c76; border-radius: 11px;';
         }
     }
 
@@ -392,7 +596,7 @@ export default class NovaExtension extends Extension {
                 Main.layoutManager.panelBox?.height || COMPACT_HEIGHT + 6,
         };
         const {x, y, width, height} =
-            getIslandGeometry(panel, monitor, this._expanded);
+            getIslandGeometry(panel, monitor, this._expanded, this._displayMode);
 
         this._island.remove_all_transitions();
 
@@ -437,6 +641,10 @@ export default class NovaExtension extends Extension {
 
     disable() {
         // Everything attached to GNOME Shell must be cleaned up synchronously.
+        if (this._clockSource) {
+            GLib.Source.remove(this._clockSource);
+            this._clockSource = 0;
+        }
         this._cancelCollapse();
         this._cancelReveal();
         this._media?.destroy();
@@ -449,6 +657,12 @@ export default class NovaExtension extends Extension {
         if (this._panelAllocationId) {
             Main.panel.disconnect(this._panelAllocationId);
             this._panelAllocationId = 0;
+        }
+
+        if (FLOATING_PANEL) {
+            Main.panel.remove_style_class_name('nova-floating-panel');
+            Main.panel.set_style(this._oldPanelStyle ?? '');
+            this._oldPanelStyle = null;
         }
 
         if (this._clockActor && this._clockWasVisible !== null)
@@ -465,6 +679,15 @@ export default class NovaExtension extends Extension {
 
         this._compactView = null;
         this._expandedView = null;
+        this._musicView = null;
+        this._calendarView = null;
+        this._calendarPin = null;
+        this._dayButtons = null;
+        this._calendarTime = null;
+        this._calendarDate = null;
+        this._compactText = null;
+        this._compactIcon = null;
+        this._statusDot = null;
         this._badge = null;
         this._pinButton = null;
         this._pinned = false;

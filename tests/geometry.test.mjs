@@ -35,3 +35,13 @@ test('limits island width on narrow screens', () => {
     const geometry = getIslandGeometry(panel, monitor, true);
     assert.deepEqual(geometry, {x: 22, y: 23, width: 256, height: 124});
 });
+
+test('calendar expands downward without shifting its centered anchor', () => {
+    const panel = {x: 0, y: 0, width: 1648, height: 28};
+    const compact = getIslandGeometry(panel, panel, false, 'clock');
+    const calendar = getIslandGeometry(panel, panel, true, 'clock');
+    assert.equal(calendar.height, 316);
+    assert.equal(calendar.y, compact.y);
+    assert.equal(calendar.x + calendar.width / 2,
+        compact.x + compact.width / 2);
+});

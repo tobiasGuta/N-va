@@ -15,3 +15,15 @@ test('Nova draws its capsule background even with external Shell themes', () => 
     assert.match(extension, /background-color: #050608/);
     assert.match(extension, /border-radius: 21px/);
 });
+
+test('floating bar does not remove the GNOME panel or its controls', () => {
+    assert.match(extension, /Main\.panel\.add_style_class_name\('nova-floating-panel'\)/);
+    assert.match(extension, /Main\.panel\.remove_style_class_name\('nova-floating-panel'\)/);
+    assert.doesNotMatch(extension, /Main\.panel\.hide\(/);
+});
+
+test('clock and music modes have independent expanded layouts', () => {
+    assert.match(extension, /_buildCalendar\(\)/);
+    assert.match(extension, /this\._musicView\.visible = playing/);
+    assert.match(extension, /this\._calendarView\.visible = !playing/);
+});

@@ -33,3 +33,18 @@
 }
 .nova-close { background-color: #1a1c20; border-radius: 13px; }
 .nova-close:hover, .nova-close:focus { background-color: #34363d; }
+
+/* Floating desktop mode: keep panel children intact, just remove its fill. */
+#panel.nova-floating-panel,
+#panel.nova-floating-panel:overview,
+#panel.nova-floating-panel:lock-screen {
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+}
+.nova-clock-time { color: #f8fafc; font-size: 17px; font-weight: 700; }
+.nova-clock-date { color: #a6abb4; font-size: 10px; }
+.nova-month-title { color: #f8fafc; font-size: 12px; font-weight: 700; }
+.nova-day { border-radius: 11px; }
+.nova-day-number { font-size: 10px; }
+.nova-weekday { font-size: 9px; color: #858b95; }
