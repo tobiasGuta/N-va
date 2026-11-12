@@ -12,10 +12,12 @@ const COMPACT_WIDTH = 166;
 const COMPACT_HEIGHT = 32;
 const COLLAPSE_DELAY_MS = 650;
 
-function icon(name, styleClass = 'nova-icon') {
+function icon(name, styleClass = 'nova-icon', size = 15, color = '#f7f7f8') {
     return new St.Icon({
         icon_name: name,
         style_class: styleClass,
+        icon_size: size,
+        style: `color: ${color};`,
         y_align: Clutter.ActorAlign.CENTER,
     });
 }
@@ -28,13 +30,21 @@ function label(text, styleClass) {
     });
 }
 
-function controlButton(iconName, accessibleName, callback, styleClass = 'nova-control') {
+function controlButton(iconName, accessibleName, callback, primary = false) {
     const button = new St.Button({
-        style_class: styleClass,
+        style_class: primary ? 'nova-control nova-play-control' : 'nova-control',
+        style: primary
+            ? 'background-color: #baff80; color: #111315; border-radius: 17px;'
+            : 'background-color: transparent; color: #e5e7eb; border-radius: 17px;',
+        width: 30,
+        height: 30,
+        x_align: Clutter.ActorAlign.CENTER,
+        y_align: Clutter.ActorAlign.CENTER,
         can_focus: true,
         reactive: true,
         track_hover: true,
-        child: icon(iconName),
+        child: icon(iconName, 'nova-control-icon', 15,
+            primary ? '#111315' : '#e5e7eb'),
     });
     button.set_accessible_name(accessibleName);
     button.connect('clicked', callback);
@@ -50,8 +60,10 @@ function clipped(text, max) {
 export default class NovaExtension extends Extension {
     enable() {
         this._expanded = false;
+        this._pinned = false;
         this._playerState = null;
         this._collapseSource = 0;
+        this._revealSource = 0;
         this._monitorChangedId = 0;
         this._panelAllocationId = 0;
 
@@ -83,6 +95,11 @@ export default class NovaExtension extends Extension {
         this._island = new St.Widget({
             name: 'novaIsland',
             style_class: 'nova-island',
+            // Critical surfaces are styled inline as well as in stylesheet.css.
+            // This keeps Nova a distinct black capsule with custom Shell themes.
+            style: 'background-color: #050608; color: #f8fafc; ' +
+                'border: 1px solid rgba(255,255,255,0.12); ' +
+                'border-radius: 21px;',
             reactive: true,
             track_hover: true,
             can_focus: true,
@@ -95,79 +112,126 @@ export default class NovaExtension extends Extension {
         const compactContent = new St.BoxLayout({
             orientation: Clutter.Orientation.HORIZONTAL,
             style_class: 'nova-compact-row',
+            spacing: 8,
             x_expand: true,
             y_expand: true,
+            y_align: Clutter.ActorAlign.CENTER,
         });
-        compactContent.add_child(icon('audio-x-generic-symbolic', 'nova-compact-icon'));
+        compactContent.add_child(icon(
+            'audio-x-generic-symbolic', 'nova-compact-icon', 13, '#baff80'
+        ));
         this._compactText = label('NOVA', 'nova-compact-title');
+        this._compactText.style = 'font-size: 11px; font-weight: 700; color: #f8fafc;';
+        this._compactText.x_expand = true;
         compactContent.add_child(this._compactText);
         compactContent.add_child(new St.Bin({
             style_class: 'nova-status-dot',
+            style: 'background-color: #baff80; border-radius: 4px;',
+            width: 5,
+            height: 5,
             y_align: Clutter.ActorAlign.CENTER,
         }));
 
         this._compactView = new St.Button({
             style_class: 'nova-compact',
+            style: 'background-color: transparent; padding: 0 12px;',
             child: compactContent,
             reactive: true,
             can_focus: true,
             track_hover: true,
             x_expand: true,
             y_expand: true,
+            x_align: Clutter.ActorAlign.FILL,
+            y_align: Clutter.ActorAlign.FILL,
         });
-        this._compactView.set_accessible_name('Expand Nova');
-        this._compactView.connect('clicked', () => this._setExpanded(true));
+        this._compactView.set_accessible_name('Keep Nova open');
+        this._compactView.connect('clicked', () => {
+            this._pinned = true;
+            this._setExpanded(true);
+        });
 
         this._expandedView = new St.BoxLayout({
             orientation: Clutter.Orientation.VERTICAL,
             style_class: 'nova-expanded',
+            style: 'padding: 13px 14px 11px;',
+            spacing: 11,
             x_expand: true,
             y_expand: true,
+            x_align: Clutter.ActorAlign.FILL,
+            y_align: Clutter.ActorAlign.FILL,
             visible: false,
         });
 
         const header = new St.BoxLayout({
             orientation: Clutter.Orientation.HORIZONTAL,
             style_class: 'nova-header',
+            spacing: 11,
             x_expand: true,
+            y_align: Clutter.ActorAlign.CENTER,
         });
 
         const artwork = new St.Bin({
             style_class: 'nova-artwork',
+            style: 'background-color: #202a25; border-radius: 11px;',
+            width: 46,
+            height: 46,
+            x_align: Clutter.ActorAlign.CENTER,
             y_align: Clutter.ActorAlign.CENTER,
         });
-        artwork.set_child(icon('audio-x-generic-symbolic', 'nova-artwork-icon'));
+        artwork.set_child(icon(
+            'audio-x-generic-symbolic', 'nova-artwork-icon', 23, '#baff80'
+        ));
         header.add_child(artwork);
 
         const texts = new St.BoxLayout({
             orientation: Clutter.Orientation.VERTICAL,
             style_class: 'nova-track-texts',
+            spacing: 3,
             x_expand: true,
             y_align: Clutter.ActorAlign.CENTER,
         });
         this._title = label('Nothing playing', 'nova-track-title');
+        this._title.style = 'font-size: 12px; font-weight: 700; color: #f8fafc;';
         this._artist = label('Start a music player', 'nova-track-artist');
+        this._artist.style = 'font-size: 10px; color: #a6abb4;';
         texts.add_child(this._title);
         texts.add_child(this._artist);
         header.add_child(texts);
 
-        header.add_child(controlButton(
-            'window-close-symbolic', 'Collapse Nova',
-            () => this._setExpanded(false), 'nova-close'
-        ));
+        const close = new St.Button({
+            style_class: 'nova-close',
+            style: 'background-color: #1a1c20; border-radius: 13px;',
+            width: 25,
+            height: 25,
+            can_focus: true,
+            reactive: true,
+            x_align: Clutter.ActorAlign.CENTER,
+            y_align: Clutter.ActorAlign.START,
+            child: icon('window-close-symbolic', 'nova-close-icon', 12, '#c8cbd0'),
+        });
+        close.set_accessible_name('Close Nova');
+        close.connect('clicked', () => {
+            this._pinned = false;
+            this._setExpanded(false);
+        });
+        header.add_child(close);
         this._expandedView.add_child(header);
 
         const footer = new St.BoxLayout({
             orientation: Clutter.Orientation.HORIZONTAL,
             style_class: 'nova-footer',
+            spacing: 6,
             x_expand: true,
+            y_align: Clutter.ActorAlign.CENTER,
         });
-        const badge = label('NOW PLAYING', 'nova-footer-label');
-        footer.add_child(badge);
+        this._badge = label('READY', 'nova-footer-label');
+        this._badge.style = 'font-size: 9px; font-weight: 700; color: #baff80;';
+        footer.add_child(this._badge);
 
         const controls = new St.BoxLayout({
             orientation: Clutter.Orientation.HORIZONTAL,
             style_class: 'nova-controls',
+            spacing: 9,
             x_expand: true,
             x_align: Clutter.ActorAlign.END,
         });
@@ -177,7 +241,7 @@ export default class NovaExtension extends Extension {
         );
         this._playPause = controlButton(
             'media-playback-start-symbolic', 'Play or pause',
-            () => this._media?.control('toggle'), 'nova-control nova-play-control'
+            () => this._media?.control('toggle'), true
         );
         this._next = controlButton(
             'media-skip-forward-symbolic', 'Next track',
@@ -196,7 +260,7 @@ export default class NovaExtension extends Extension {
             if (this._island.hover) {
                 this._cancelCollapse();
                 this._setExpanded(true);
-            } else {
+            } else if (!this._pinned) {
                 this._scheduleCollapse();
             }
         });
@@ -216,9 +280,12 @@ export default class NovaExtension extends Extension {
         this._artist.text = clipped(artist, 39);
         this._playPause.set_child(icon(
             playing ? 'media-playback-pause-symbolic' :
-                'media-playback-start-symbolic'
+                'media-playback-start-symbolic',
+            'nova-control-icon', 15, '#111315'
         ));
         this._playPause.set_accessible_name(playing ? 'Pause' : 'Play');
+        this._badge.text = !player ? 'NO MEDIA' :
+            playing ? 'NOW PLAYING' : 'PAUSED';
 
         this._previous.reactive = player?.canPrevious ?? false;
         this._previous.can_focus = this._previous.reactive;
@@ -232,6 +299,7 @@ export default class NovaExtension extends Extension {
                 button.remove_style_pseudo_class('disabled');
             else
                 button.add_style_pseudo_class('disabled');
+            button.opacity = button.reactive ? 255 : 95;
         }
     }
 
@@ -239,14 +307,42 @@ export default class NovaExtension extends Extension {
         if (!this._island || this._expanded === expanded)
             return;
 
+        this._cancelReveal();
         this._expanded = expanded;
         this._compactView.visible = !expanded;
         this._expandedView.visible = expanded;
 
-        if (expanded)
+        if (expanded) {
             this._cancelCollapse();
+            // Reveal the contents after the black capsule starts expanding.
+            // The island itself stays visible throughout the transition.
+            this._expandedView.opacity = 0;
+            this._revealSource = GLib.timeout_add(
+                GLib.PRIORITY_DEFAULT, 95, () => {
+                    this._revealSource = 0;
+                    if (this._island && this._expanded) {
+                        this._expandedView.ease({
+                            opacity: 255,
+                            duration: 155,
+                            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                        });
+                    }
+                    return GLib.SOURCE_REMOVE;
+                }
+            );
+        } else {
+            this._expandedView.remove_all_transitions();
+            this._expandedView.opacity = 0;
+        }
 
         this._position(true);
+    }
+
+    _cancelReveal() {
+        if (!this._revealSource)
+            return;
+        GLib.Source.remove(this._revealSource);
+        this._revealSource = 0;
     }
 
     _position(animate) {
@@ -297,7 +393,7 @@ export default class NovaExtension extends Extension {
         this._collapseSource = GLib.timeout_add(
             GLib.PRIORITY_DEFAULT, COLLAPSE_DELAY_MS, () => {
                 this._collapseSource = 0;
-                if (this._island && !this._island.hover)
+                if (this._island && !this._island.hover && !this._pinned)
                     this._setExpanded(false);
                 return GLib.SOURCE_REMOVE;
             }
@@ -315,6 +411,7 @@ export default class NovaExtension extends Extension {
     disable() {
         // Everything attached to GNOME Shell must be cleaned up synchronously.
         this._cancelCollapse();
+        this._cancelReveal();
         this._media?.destroy();
         this._media = null;
 
@@ -341,6 +438,8 @@ export default class NovaExtension extends Extension {
 
         this._compactView = null;
         this._expandedView = null;
+        this._badge = null;
+        this._pinned = false;
         this._playerState = null;
     }
 }

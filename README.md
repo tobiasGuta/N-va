@@ -4,16 +4,17 @@
 
 Nova is an early-stage GNOME Shell extension that puts a dark, interactive pill at the top center of your desktop. Hover or click to expand it; control compatible music players through the standard Linux MPRIS D-Bus interface.
 
-## Features in v0.1
+## Features in v0.2
 
-- Compact, centered black pill fitted to the GNOME panel height, with smooth expand/collapse animation.
-- Shows the currently playing track and artist.
+- Compact, centered black pill fitted to the GNOME panel height, with smooth expand/collapse and content fade-in.
+- A rounded black expanded card showing the current track and artist, styled consistently even on customized GNOME Shell themes.
 - Play/pause, previous and next buttons (when the player supports them).
+- Hover to preview; click the compact pill to pin the card open; close to collapse.
 - Automatically discovers MPRIS players and follows playback changes.
 - Restores the original GNOME center clock when disabled.
 - Respects GNOME 51 reduced-motion preference; no network calls, AI, or subprocesses.
 
-**Status:** First development release. Source targets GNOME Shell 49, 50 and 51, but has not yet been runtime-tested on Fedora. Notifications, artwork, timers, and configurable positioning are not implemented yet.
+**Status:** Early development release. Source targets GNOME Shell 49, 50 and 51, but has not yet been runtime-tested on Fedora. Notifications, artwork, timers, and configurable positioning are not implemented yet.
 
 ## Install on Fedora GNOME
 
@@ -74,7 +75,7 @@ Only GNOME Shell 49–51 is targeted. JavaScript is written as modern GJS ES mod
 npm run check
 ```
 
-For UI testing, use a nested GNOME Shell development session when possible. Because GNOME extensions run inside the shell process, test safely before enabling on your main desktop. After editing JavaScript under Wayland, log out and back in to reload.
+For UI testing, use a nested GNOME Shell development session when possible. Because GNOME extensions run inside the shell process, test safely before enabling on your main desktop. After editing JavaScript under Wayland, log out and back in to reload. CSS is also automatically installed by `install.sh`.
 
 Debug extension errors with:
 
