@@ -55,3 +55,14 @@ test('progress is rendered by a width-constrained fill inside a bar', () => {
     assert.match(extension, /_activityProgress\.add_child\(this\._activityBarFill\)/);
     assert.match(extension, /_activityBarFill\.width = Math\.round/);
 });
+
+test('Nova exposes preferences directly from the island', () => {
+    assert.match(extension, /this\.openPreferences\(\)/);
+    assert.match(extension, /emblem-system-symbolic/);
+});
+
+test('optional native OSD interception is reversible on disable', () => {
+    assert.match(extension, /_syncNativeOsd\(\)/);
+    assert.match(extension, /_restoreNativeOsd\(\)/);
+    assert.match(extension, /this\._restoreNativeOsd\(\)/);
+});

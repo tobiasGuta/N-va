@@ -309,8 +309,8 @@ export default class NovaExtension extends Extension {
 
         this._pinButton = this._makePinButton();
         header.add_child(this._pinButton);
-        header.add_child(this._makeCloseButton());
         header.add_child(this._makeSettingsButton());
+        header.add_child(this._makeCloseButton());
         this._musicView.add_child(header);
 
         const footer = new St.BoxLayout({

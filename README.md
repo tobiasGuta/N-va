@@ -27,7 +27,7 @@ Nova is an early-stage GNOME Shell extension with a compact clock and calendar b
 - Restores the original GNOME center clock when disabled.
 - Respects GNOME 51 reduced-motion preference; no AI or subprocesses. Optional HTTPS requests occur only for remote cover art during playback.
 
-**Status:** Experimental release targeting GNOME Shell 49–51. The new activities and preferences use GNOME APIs that may vary with Fedora/desktop extensions and need live Fedora testing. The calendar is local-only (no appointments). Nova mirrors notifications rather than replacing the native banner.
+**Status:** Experimental v0.5.1 release targeting GNOME Shell 49–51. The new activities and preferences use GNOME APIs that may vary with Fedora/desktop extensions and need live Fedora testing. The calendar is local-only (no appointments). Nova mirrors notifications rather than replacing the native banner.
 
 ## Install on Fedora GNOME
 
@@ -101,7 +101,7 @@ Adjust the compact/expanded widths, accent color (hex `#RRGGBB`), animation spee
 ## Live activity coverage
 
 - **Timer:** Start a 5-, 15-, or 25-minute countdown in the expanded calendar. It remains visible until stopped or finished.
-- **Notifications:** Preview notification titles from GNOME's existing Message Tray. **Mirroring is off by default** because GNOME would show its own banner too. Enable it in preferences only if you want both; native alerts remain intact.
+- **Notifications:** Preview notification titles from GNOME's existing Message Tray. **Mirroring is off by default** after updating because GNOME would show its own banner too. Enable it in preferences only if you want both; native alerts remain intact.
 - **Volume / brightness OSD:** GNOME normally shows its own OSD as well as Nova. The new **Replace native volume/brightness OSD** preference is experimental and off by default. When enabled, Nova suppresses only volume/brightness OSD types that it can detect, leaving other GNOME overlays intact. Disabling Nova restores the original GNOME methods.
 - **Volume:** Mirrors output-volume changes from compatible GNOME Quick Settings stream objects.
 - **Brightness:** Reads Mutter's modern `org.gnome.Mutter.DisplayConfig.Backlight` property. Unsupported monitors or GNOME versions quietly skip the preview.
