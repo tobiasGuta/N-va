@@ -10,11 +10,15 @@ test('live slider wins over stale Mutter backlight polls', () => {
     assert.match(monitor, /this\._showBrightness\(Math\.round\(fraction \* 100\)\)/);
 });
 
-test('completed browser downloads are observed from temporary-file removal', () => {
-    assert.match(monitor, /Gio\.FileMonitorFlags\.WATCH_MOVES/);
-    assert.match(monitor, /Gio\.FileMonitorEvent\.DELETED/);
-    assert.match(monitor, /_verifyDownloadFinished\(file\.get_parent\(\), base\)/);
-    assert.match(monitor, /this\._downloadCompleted\(basename\)/);
+test('Downloads uses an asynchronous scanner plus event monitor', () => {
+    const source = readFileSync(new URL('../lib/downloads.js', import.meta.url), 'utf8');
+    assert.match(source, /Gio\.FileMonitorFlags\.WATCH_MOVES/);
+    assert.match(source, /enumerate_children_async/);
+    assert.match(source, /next_files_async/);
+    assert.match(source, /GLib\.get_user_special_dir/);
+    assert.match(monitor, /this\._downloads\.start\(\)/);
+    assert.match(monitor, /this\._downloads\?\.destroy\(\)/);
+    assert.doesNotMatch(source, /enumerate_children\(/);
 });
 
 test('recognized OSD events create Nova previews while others fall through', () => {
