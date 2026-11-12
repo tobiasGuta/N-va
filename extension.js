@@ -10,6 +10,7 @@ import {ArtworkLoader} from './lib/artwork.js';
 import {waveFrame} from './lib/waveform.js';
 import {getIslandGeometry} from './lib/geometry.js';
 import {ActivityMonitor} from './lib/activity-monitor.js';
+import {osdPreview} from './lib/osd-utils.js';
 import {percentage, remainingSeconds, durationLabel} from './lib/activity-utils.js';
 import {activeMode, compactClock, fullClock, longDate, monthCells, monthLabel, weekdayLabels} from './lib/clock.js';
 
@@ -108,6 +109,7 @@ export default class NovaExtension extends Extension {
         this._activities = null;
         this._osdHooks = [];
         this._osdHookEnabled = false;
+        this._lastPreview = null;
         this._settingsChangedId = 0;
         this._settings = this.getSettings();
 
@@ -445,35 +447,44 @@ export default class NovaExtension extends Extension {
             this._setPinned(true);
     }
 
-    _shouldBlockNativeOsd(args) {
-        if (!this._osdHookEnabled || !this._activities || !this._settings)
+    _handleNativeOsd(args) {
+        if (!this._osdHookEnabled || !this._island || !this._settings)
             return false;
-        // GNOME OSD signatures differ between 49/50/51: locate the
-        // themed GIcon by capability rather than assuming argument offsets.
-        const names = [];
-        for (const arg of args) {
+        // GNOME 49+ showAll(icon,label,level,max) or
+        // showOne(monitor,icon,label,level,max). Locate the GIcon.
+        for (let i = 0; i < args.length; i++) {
+            const arg = args[i];
             if (!arg || typeof arg !== 'object')
                 continue;
+            let names = [];
             try {
-                const candidates = arg.get_names?.();
-                if (Array.isArray(candidates))
-                    names.push(...candidates);
+                const available = arg.get_names?.();
+                if (Array.isArray(available))
+                    names.push(...available);
+                const encoded = arg.to_string?.();
+                if (typeof encoded === 'string')
+                    names.push(encoded);
                 if (typeof arg.icon_name === 'string')
                     names.push(arg.icon_name);
-                const fallback = arg.to_string?.();
-                if (typeof fallback === 'string')
-                    names.push(fallback);
-            } catch (_error) {}
+            } catch (_error) {
+                continue;
+            }
+            const name = names.join(' ');
+            const volume = name.includes('audio-volume-');
+            const brightness = name.includes('display-brightness-');
+            if (!volume && !brightness)
+                continue;
+            if (!this._settings.get_boolean(volume ? 'show-volume' : 'show-brightness'))
+                return false;
+
+            const fallback = volume ? this._activities?._lastVolume
+                : this._activities?._lastBrightness;
+            const activity = osdPreview(name, args[i + 2], args[i + 3], fallback);
+            if (!activity)
+                return false;
+            this._showPreview(activity);
+            return true;
         }
-        const name = names.join(' ').toLowerCase();
-        if (name.includes('audio-volume') &&
-            this._settings.get_boolean('show-volume') &&
-            this._activities._volumeStream)
-            return true;
-        if (name.includes('display-brightness') &&
-            this._settings.get_boolean('show-brightness') &&
-            this._activities._lastBrightness !== null)
-            return true;
         return false;
     }
 
@@ -496,7 +507,7 @@ export default class NovaExtension extends Extension {
             const hadOwn = Object.prototype.hasOwnProperty.call(manager, method);
             const wrapper = (...args) => {
                 try {
-                    if (this._shouldBlockNativeOsd(args))
+                    if (this._handleNativeOsd(args))
                         return;
                 } catch (_error) {
                     // Any unexpected API shape falls back to GNOME's OSD.
@@ -694,6 +705,13 @@ export default class NovaExtension extends Extension {
     _showPreview(activity) {
         if (!this._island)
             return;
+        const now = GLib.get_monotonic_time();
+        if (this._lastPreview &&
+            this._lastPreview.kind === activity.kind &&
+            this._lastPreview.detail === activity.detail &&
+            now - this._lastPreview.at < 250000)
+            return;
+        this._lastPreview = {kind: activity.kind, detail: activity.detail, at: now};
         this._transient = activity;
         if (this._activityExpireSource)
             GLib.Source.remove(this._activityExpireSource);
@@ -1348,6 +1366,7 @@ export default class NovaExtension extends Extension {
         this._pinButton = null;
         this._lastGicon = null;
         this._transient = null;
+        this._lastPreview = null;
         this._pinned = false;
         this._playerState = null;
     }

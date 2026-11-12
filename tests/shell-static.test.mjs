@@ -74,3 +74,9 @@ test('normal notifications can be acknowledged after Nova preview, critical aler
     assert.match(monitor, /notification\.acknowledged = true/);
     assert.doesNotMatch(monitor, /Main\.messageTray\.bannerBlocked = true/);
 });
+
+test('native OSD events show Nova preview, not silent suppression', () => {
+    assert.match(extension, /_handleNativeOsd\(args\)/);
+    assert.match(extension, /const activity = osdPreview\(/);
+    assert.match(extension, /this\._showPreview\(activity\)/);
+});

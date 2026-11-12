@@ -39,7 +39,7 @@ export default class NovaPreferences extends ExtensionPreferences {
             [behavior, 'show-volume', 'Nova volume indicator',
                 'Enable Nova’s volume overlay (GNOME may show its own OSD too)'],
             [behavior, 'replace-native-osd', 'Replace native volume/brightness OSD',
-                'Experimental: hide GNOME overlays only when Nova can show them. Reversible.'],
+                'Show Nova in place of supported GNOME volume/brightness popups. Other overlays remain.'],
             [behavior, 'show-brightness', 'Brightness', 'Show compatible laptop screen brightness changes'],
             [behavior, 'show-recording', 'Screen recording', 'Show GNOME’s built-in screencast status'],
             [behavior, 'show-downloads', 'Downloads', 'Watch the default Downloads folder for activity'],

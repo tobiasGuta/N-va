@@ -9,7 +9,7 @@
     <key name="show-notifications" type="b"><default>true</default></key>
     <key name="replace-native-notifications" type="b"><default>true</default></key>
     <key name="show-volume" type="b"><default>true</default></key>
-    <key name="replace-native-osd" type="b"><default>false</default></key>
+    <key name="replace-native-osd" type="b"><default>true</default></key>
     <key name="show-brightness" type="b"><default>true</default></key>
     <key name="show-recording" type="b"><default>true</default></key>
     <key name="show-downloads" type="b"><default>true</default></key>
