@@ -445,6 +445,89 @@ export default class NovaExtension extends Extension {
             this._setPinned(true);
     }
 
+    _shouldBlockNativeOsd(args) {
+        if (!this._osdHookEnabled || !this._activities || !this._settings)
+            return false;
+        // GNOME OSD signatures differ between 49/50/51: locate the
+        // themed GIcon by capability rather than assuming argument offsets.
+        const names = [];
+        for (const arg of args) {
+            if (!arg || typeof arg !== 'object')
+                continue;
+            try {
+                const candidates = arg.get_names?.();
+                if (Array.isArray(candidates))
+                    names.push(...candidates);
+                if (typeof arg.icon_name === 'string')
+                    names.push(arg.icon_name);
+                const fallback = arg.to_string?.();
+                if (typeof fallback === 'string')
+                    names.push(fallback);
+            } catch (_error) {}
+        }
+        const name = names.join(' ').toLowerCase();
+        if (name.includes('audio-volume') &&
+            this._settings.get_boolean('show-volume') &&
+            this._activities._volumeStream)
+            return true;
+        if (name.includes('display-brightness') &&
+            this._settings.get_boolean('show-brightness') &&
+            this._activities._lastBrightness !== null)
+            return true;
+        return false;
+    }
+
+    _syncNativeOsd() {
+        if (!this._settings?.get_boolean('replace-native-osd')) {
+            this._restoreNativeOsd();
+            return;
+        }
+        if (this._osdHooks?.length)
+            return;
+        const manager = Main.osdWindowManager;
+        if (!manager)
+            return;
+
+        this._osdHookEnabled = true;
+        for (const method of ['show', 'showOne', 'showAll']) {
+            const original = manager[method];
+            if (typeof original !== 'function')
+                continue;
+            const hadOwn = Object.prototype.hasOwnProperty.call(manager, method);
+            const wrapper = (...args) => {
+                try {
+                    if (this._shouldBlockNativeOsd(args))
+                        return;
+                } catch (_error) {
+                    // Any unexpected API shape falls back to GNOME's OSD.
+                }
+                return original.apply(manager, args);
+            };
+            try {
+                manager[method] = wrapper;
+                this._osdHooks.push({manager, method, original, wrapper, hadOwn});
+            } catch (_error) {
+                // Some shell versions may disallow replacing this method.
+            }
+        }
+    }
+
+    _restoreNativeOsd() {
+        this._osdHookEnabled = false;
+        for (const {manager, method, original, wrapper, hadOwn} of
+            this._osdHooks ?? []) {
+            try {
+                if (manager[method] !== wrapper)
+                    continue; // Another extension has since wrapped this method.
+                if (hadOwn)
+                    manager[method] = original;
+                else
+                    delete manager[method];
+            } catch (_error) {}
+        }
+        this._osdHooks = [];
+    }
+
     _syncPanelStyle() {
         if (!Main.panel || !this._settings)
             return;
