@@ -14,8 +14,10 @@ mkdir -p "${TARGET_DIR}/lib"
 for file in extension.js metadata.json stylesheet.css; do
     install -m 0644 "${SOURCE_DIR}/${file}" "${TARGET_DIR}/${file}"
 done
-for file in mpris.js player.js; do
-    install -m 0644 "${SOURCE_DIR}/lib/${file}" "${TARGET_DIR}/lib/${file}"
+# Always install every runtime module so adding a new import cannot silently
+# break installed copies of Nova (e.g. lib/geometry.js).
+for file in "${SOURCE_DIR}"/lib/*.js; do
+    install -m 0644 "${file}" "${TARGET_DIR}/lib/$(basename -- "${file}")"
 done
 
 echo "Installed Nova to ${TARGET_DIR}"
