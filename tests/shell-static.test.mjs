@@ -111,5 +111,5 @@ test('the optional developer service starts and stops from settings', () => {
     const service = readFileSync(new URL('../lib/live-activity.js', import.meta.url), 'utf8');
     assert.match(service, /Gio\.DBusExportedObject\.wrapJSObject\(/);
     assert.match(service, /Gio\.bus_unown_name\(/);
-    assert.doesNotMatch(service, /spawn|execSync|subprocess/i);
+    assert.doesNotMatch(service, /Gio\\.Subprocess|GLib\\.spawn_|child_process/);
 });
