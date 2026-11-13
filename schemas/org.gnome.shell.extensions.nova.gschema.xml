@@ -9,6 +9,7 @@
     <key name="theme-preset" type="s"><default>'custom'</default></key>
     <key name="toggle-shortcut" type="as"><default>[]</default></key>
     <key name="show-media-visualizer" type="b"><default>true</default></key>
+    <key name="developer-activities" type="b"><default>false</default></key>
     <key name="show-notifications" type="b"><default>true</default></key>
     <key name="replace-native-notifications" type="b"><default>true</default></key>
     <key name="show-volume" type="b"><default>true</default></key>

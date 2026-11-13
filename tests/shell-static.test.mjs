@@ -104,3 +104,12 @@ test('static notifications do not rebuild their actor tree every second', () => 
     assert.match(extension, /if \(!this\._transient && \(this\._timerTarget \|\| this\._recording\)\)/);
     assert.match(extension, /if \(this\._lastActivityIcon !== activityIcon\)/);
 });
+
+test('the optional developer service starts and stops from settings', () => {
+    assert.match(extension, /this\._syncDeveloperApi\(\)/);
+    assert.match(extension, /this\._liveActivityService\?\.destroy\(\)/);
+    const service = readFileSync(new URL('../lib/live-activity.js', import.meta.url), 'utf8');
+    assert.match(service, /Gio\.DBusExportedObject\.wrapJSObject\(/);
+    assert.match(service, /Gio\.bus_unown_name\(/);
+    assert.doesNotMatch(service, /spawn|execSync|subprocess/i);
+});

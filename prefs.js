@@ -46,7 +46,9 @@ export default class NovaPreferences extends ExtensionPreferences {
             [behavior, 'show-downloads', 'Downloads', 'Watch the default Downloads folder for activity'],
             [behavior, 'show-timer', 'Timer', 'Enable countdown timers in the calendar'],
             [behavior, 'show-media-visualizer', 'Animated music bars',
-                'Disable the decorative animation to minimize CPU activity']
+                'Disable the decorative animation to minimize CPU activity'],
+            [behavior, 'developer-activities', 'Developer activity API',
+                'Opt-in: accept short local D-Bus status cards from same-user apps']
         );
         for (const [group, key, title, subtitle] of toggles) {
             const row = new Adw.SwitchRow({title, subtitle});

@@ -13,6 +13,7 @@ import {waveFrame} from './lib/waveform.js';
 import {getIslandGeometry} from './lib/geometry.js';
 import {resolveTheme, validShortcut} from './lib/themes.js';
 import {ActivityMonitor} from './lib/activity-monitor.js';
+import {LiveActivityService} from './lib/live-activity.js';
 import {osdPreview} from './lib/osd-utils.js';
 import {percentage, remainingSeconds, durationLabel} from './lib/activity-utils.js';
 import {activeMode, compactClock, fullClock, longDate, monthCells, monthLabel, weekdayLabels} from './lib/clock.js';
@@ -115,6 +116,7 @@ export default class NovaExtension extends Extension {
         this._lastPreview = null;
         this._settingsChangedId = 0;
         this._shortcutBound = false;
+        this._liveActivityService = null;
         this._lastActivityIcon = null;
         this._settings = this.getSettings();
 
@@ -166,6 +168,7 @@ export default class NovaExtension extends Extension {
         );
         this._activities.start();
         this._bindShortcut();
+        this._syncDeveloperApi();
         this._syncNativeOsd();
         this._applyAppearance();
     }
@@ -440,6 +443,26 @@ export default class NovaExtension extends Extension {
         );
     }
 
+    _syncDeveloperApi() {
+        if (!this._settings?.get_boolean('developer-activities')) {
+            this._liveActivityService?.destroy();
+            this._liveActivityService = null;
+            return;
+        }
+        if (this._liveActivityService)
+            return;
+        try {
+            this._liveActivityService = new LiveActivityService(
+                activity => this._showPreview(activity)
+            );
+            this._liveActivityService.start();
+        } catch (error) {
+            console.warn('Nova: developer API unavailable: ' + error.message);
+            this._liveActivityService?.destroy();
+            this._liveActivityService = null;
+        }
+    }
+
     _bindShortcut() {
         if (!this._settings || this._shortcutBound)
             return;
@@ -640,6 +663,8 @@ export default class NovaExtension extends Extension {
             this._bindShortcut();
         } else if (key === 'show-media-visualizer') {
             this._syncWave();
+        } else if (key === 'developer-activities') {
+            this._syncDeveloperApi();
         }
         else if (key === 'show-timer' && !this._settings.get_boolean(key)) {
             this._timerTarget = 0;
@@ -1395,6 +1420,8 @@ export default class NovaExtension extends Extension {
             GLib.Source.remove(this._activityTickSource);
             this._activityTickSource = 0;
         }
+        this._liveActivityService?.destroy();
+        this._liveActivityService = null;
         this._unbindShortcut();
         this._restoreNativeOsd();
         this._activities?.destroy();
