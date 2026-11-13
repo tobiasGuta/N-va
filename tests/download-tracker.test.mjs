@@ -46,15 +46,43 @@ test('disappearing .part without final is not reported as complete', () => {
     assert.deepEqual(tracker.observe(snap([]), 15000), []);
 });
 
-test('direct-to-final files show saving and later saved after stable size', () => {
+test('instant direct-to-final image shows only Saved after short settle', () => {
     const tracker = new DownloadTracker();
     tracker.observe(snap([]), 0);
-    assert.deepEqual(types(tracker.observe(snap([['small.txt', 20]]), 1000)),
-        ['saving']);
-    assert.deepEqual(tracker.observe(snap([['small.txt', 40]]), 2000), []);
-    assert.deepEqual(tracker.observe(snap([['small.txt', 40]]), 4000), []);
-    assert.deepEqual(types(tracker.observe(snap([['small.txt', 40]]), 5500)),
+    assert.deepEqual(tracker.observe(snap([['photo.webp', 2048]]), 1000), []);
+    assert.deepEqual(types(tracker.observe(snap([['photo.webp', 2048]]), 1750)),
         ['saved']);
+    assert.deepEqual(tracker.observe(snap([['photo.webp', 2048]]), 2200), []);
+});
+
+test('large direct write shows Saving before Saved without guessed percent', () => {
+    const tracker = new DownloadTracker();
+    tracker.observe(snap([]), 0);
+    assert.deepEqual(tracker.observe(snap([['movie.mp4', 100]]), 1000), []);
+    assert.deepEqual(tracker.observe(snap([['movie.mp4', 200]]), 1800), []);
+    assert.deepEqual(types(tracker.observe(snap([['movie.mp4', 300]]), 2300)),
+        ['saving']);
+    assert.deepEqual(tracker.observe(snap([['movie.mp4', 450]]), 3000), []);
+    assert.deepEqual(types(tracker.observe(snap([['movie.mp4', 450]]), 3750)),
+        ['saved']);
+});
+
+test('confirmed rename bypasses polling delay and suppresses later duplicate', () => {
+    const tracker = new DownloadTracker();
+    tracker.observe(snap([]), 0);
+    assert.deepEqual(tracker.confirmCompleted('quick.png', 1050),
+        {type: 'complete', name: 'quick.png'});
+    assert.equal(tracker.confirmCompleted('quick.png', 1100), null);
+    assert.deepEqual(tracker.observe(snap([['quick.png', 200]]), 1300), []);
+});
+
+test('a pending direct file schedules a follow-up scan', () => {
+    const tracker = new DownloadTracker();
+    tracker.observe(snap([]), 0);
+    tracker.observe(snap([['one.jpg', 14]]), 1000);
+    assert.equal(tracker.hasPendingFinals(), true);
+    tracker.observe(snap([['one.jpg', 14]]), 2000);
+    assert.equal(tracker.hasPendingFinals(), false);
 });
 
 test('baseline existing files do not cause spurious download popups', () => {
