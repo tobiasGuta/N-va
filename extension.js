@@ -1,4 +1,5 @@
 import Clutter from 'gi://Clutter';
+import Pango from 'gi://Pango';
 import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
 import GLib from 'gi://GLib';
@@ -14,6 +15,7 @@ import {getIslandGeometry} from './lib/geometry.js';
 import {resolveTheme, validShortcut} from './lib/themes.js';
 import {ActivityMonitor} from './lib/activity-monitor.js';
 import {LiveActivityService} from './lib/live-activity.js';
+import {NotificationQueue} from './lib/notification-preview.js';
 import {osdPreview} from './lib/osd-utils.js';
 import {percentage, remainingSeconds, durationLabel} from './lib/activity-utils.js';
 import {activeMode, compactClock, fullClock, longDate, monthCells, monthLabel, weekdayLabels} from './lib/clock.js';
@@ -106,6 +108,7 @@ export default class NovaExtension extends Extension {
         this._activityTickSource = 0;
         this._activityExpireSource = 0;
         this._transient = null;
+        this._notificationQueue = new NotificationQueue(6);
         this._recording = false;
         this._recordingStart = 0;
         this._presentedMode = 'clock';
@@ -163,7 +166,8 @@ export default class NovaExtension extends Extension {
         );
         this._activities = new ActivityMonitor(
             this._settings,
-            activity => this._showPreview(activity),
+            activity => activity.kind === 'notification'
+                ? this._queueNotification(activity) : this._showPreview(activity),
             recording => this._recordingChanged(recording)
         );
         this._activities.start();
@@ -387,7 +391,11 @@ export default class NovaExtension extends Extension {
         this._island.add_child(this._compactView);
         this._island.add_child(this._expandedView);
 
-        this._island.connect('notify::visible', () => this._syncWave());
+        this._island.connect('notify::visible', () => {
+            this._syncWave();
+            if (!this._island.visible)
+                this._notificationQueue.clear();
+        });
         this._island.connect('notify::hover', () => {
             if (this._island.hover) {
                 this._cancelCollapse();
@@ -511,6 +519,9 @@ export default class NovaExtension extends Extension {
             bar.style = `background-color: ${accent}; border-radius: 2px;`;
         if (this._badge)
             this._badge.style = `font-size: 9px; font-weight: 700; color: ${accent};`;
+        if (this._notificationCount)
+            this._notificationCount.style =
+                `font-size: 10px; font-weight: 700; color: ${accent};`;
         if (this._statusDot)
             this._statusDot.style = `background-color: ${accent}; border-radius: 4px;`;
         if (this._playPause)
@@ -666,8 +677,18 @@ export default class NovaExtension extends Extension {
             this._syncWave();
         } else if (key === 'developer-activities') {
             this._syncDeveloperApi();
-        }
-        else if (key === 'show-timer' && !this._settings.get_boolean(key)) {
+        } else if (key === 'show-notifications' &&
+                   !this._settings.get_boolean('show-notifications')) {
+            this._notificationQueue?.clear();
+            // Turning off previews should also clear the current banner.
+            if (this._transient?.kind === 'notification') {
+                if (this._activityExpireSource)
+                    GLib.Source.remove(this._activityExpireSource);
+                this._activityExpireSource = 0;
+                this._transient = null;
+            }
+            this._refreshPresentation(true);
+        } else if (key === 'show-timer' && !this._settings.get_boolean(key)) {
             this._timerTarget = 0;
             this._refreshPresentation(true);
         } else if (key.startsWith('show-')) {
@@ -714,7 +735,8 @@ export default class NovaExtension extends Extension {
         const activity = this._currentActivity();
         const playing = this._displayMode === 'music';
         const next = activity
-            ? (Number.isFinite(activity.percent) ? 'activity' : 'activity-simple')
+            ? (activity.kind === 'notification' ? 'notification'
+                : Number.isFinite(activity.percent) ? 'activity' : 'activity-simple')
             : this._displayMode;
         const changed = this._presentedMode !== next;
         this._presentedMode = next;
@@ -734,18 +756,49 @@ export default class NovaExtension extends Extension {
                         ? `${activity.title} ${activity.detail}`
                         : activity.title, 18
             );
-            const activityIcon = activity.icon ?? 'dialog-information-symbolic';
+            const activityIcon = activity.gicon ?? activity.icon ??
+                'dialog-information-symbolic';
             if (this._lastActivityIcon !== activityIcon) {
-                this._compactArt.set_child(icon(
-                    activityIcon, 'nova-activity-compact-icon', 13, this._accentColor()
+                const makeActivityIcon = (size, styleClass) => {
+                    if (activity.gicon) {
+                        try {
+                            return new St.Icon({
+                                gicon: activity.gicon, icon_size: size,
+                                style_class: styleClass,
+                                y_align: Clutter.ActorAlign.CENTER,
+                            });
+                        } catch (_error) {
+                            // Invalid/unavailable app icons fall back to Nova.
+                        }
+                    }
+                    return icon(activity.icon ?? 'dialog-information-symbolic',
+                        styleClass, size, this._accentColor());
+                };
+                this._compactArt.set_child(makeActivityIcon(
+                    13, 'nova-activity-compact-icon'
                 ));
-                this._activityIcon.set_child(icon(
-                    activityIcon, 'nova-activity-icon', 24, this._accentColor()
+                this._activityIcon.set_child(makeActivityIcon(
+                    24, 'nova-activity-icon'
                 ));
                 this._lastActivityIcon = activityIcon;
             }
-            this._activityTitle.text = clipped(activity.title ?? '', 33);
-            this._activityDetail.text = clipped(activity.detail ?? '', 43);
+            const isNotification = activity.kind === 'notification';
+            this._notificationSource.visible = isNotification;
+            this._notificationSource.text = isNotification
+                ? clipped(activity.appName ?? 'Notification', 34) : '';
+            this._notificationCount.visible = isNotification &&
+                this._notificationQueue.length > 0;
+            this._notificationCount.text = this._notificationCount.visible
+                ? `+${this._notificationQueue.length}` : '';
+            this._activityTitle.text = clipped(activity.title ?? '',
+                isNotification ? 52 : 33);
+            this._activityDetail.clutter_text.line_wrap = isNotification;
+            this._activityDetail.clutter_text.line_wrap_mode =
+                Pango.WrapMode.WORD_CHAR;
+            this._activityDetail.clutter_text.ellipsize =
+                Pango.EllipsizeMode.END;
+            this._activityDetail.text = isNotification
+                ? (activity.detail ?? '') : clipped(activity.detail ?? '', 43);
             this._activityStop.visible = activity.kind === 'timer';
             const hasPercent = Number.isFinite(activity.percent);
             // A bar represents an actual measured percentage. File-system
@@ -759,6 +812,9 @@ export default class NovaExtension extends Extension {
                 : 0;
         } else {
             this._lastActivityIcon = null;
+            this._notificationSource.visible = false;
+            this._notificationCount.visible = false;
+            this._activityDetail.clutter_text.line_wrap = false;
             this._compactText.text = playing
                 ? clipped(this._playerState?.title ?? '', 17)
                 : compactClock(new Date());
@@ -797,15 +853,30 @@ export default class NovaExtension extends Extension {
         }
     }
 
+    _queueNotification(activity) {
+        if (!this._island || !this._settings?.get_boolean('show-notifications') ||
+            !this._island.visible || Main.sessionMode?.isLocked)
+            return false;
+        if (this._transient) {
+            // Never replace a visible notification when multiple apps send at
+            // once. The queue is bounded; overflow uses GNOME's native banner.
+            const accepted = this._notificationQueue.enqueue(activity);
+            if (accepted && this._transient.kind === 'notification')
+                this._refreshPresentation(false);
+            return accepted;
+        }
+        return this._showPreview(activity);
+    }
+
     _showPreview(activity) {
         if (!this._island)
-            return;
+            return false;
         const now = GLib.get_monotonic_time();
         if (this._lastPreview &&
             this._lastPreview.kind === activity.kind &&
             this._lastPreview.detail === activity.detail &&
             now - this._lastPreview.at < 250000)
-            return;
+            return false;
         this._lastPreview = {kind: activity.kind, detail: activity.detail, at: now};
         this._transient = activity;
         if (this._activityExpireSource)
@@ -816,6 +887,15 @@ export default class NovaExtension extends Extension {
                 this._transient = null;
                 if (!this._island)
                     return GLib.SOURCE_REMOVE;
+                if (this._settings?.get_boolean('show-notifications') &&
+                    this._island.visible && !Main.sessionMode?.isLocked) {
+                    const next = this._notificationQueue.next();
+                    if (next && this._showPreview(next))
+                        return GLib.SOURCE_REMOVE;
+                } else {
+                    // Avoid displaying old private notifications after unlock.
+                    this._notificationQueue.clear();
+                }
                 this._refreshPresentation(true);
                 if (!this._pinned && !this._island.hover &&
                     !this._recording && !this._timerTarget)
@@ -826,6 +906,7 @@ export default class NovaExtension extends Extension {
         this._refreshPresentation(true);
         if (!this._expanded)
             this._setExpanded(true);
+        return true;
     }
 
     _recordingChanged(recording) {
@@ -910,6 +991,11 @@ export default class NovaExtension extends Extension {
             x_expand: true,
             y_align: Clutter.ActorAlign.CENTER,
         });
+        this._notificationSource = label('', 'nova-notification-source');
+        this._notificationSource.style =
+            'color: #a6abb4; font-size: 9px; font-weight: 700;';
+        this._notificationSource.visible = false;
+        texts.add_child(this._notificationSource);
         this._activityTitle = label('', 'nova-activity-title');
         this._activityTitle.style = 'color: #f8fafc; font-size: 12px; font-weight: 700;';
         this._activityDetail = label('', 'nova-activity-detail');
@@ -917,6 +1003,11 @@ export default class NovaExtension extends Extension {
         texts.add_child(this._activityTitle);
         texts.add_child(this._activityDetail);
         header.add_child(texts);
+        this._notificationCount = label('', 'nova-notification-count');
+        this._notificationCount.style =
+            'font-size: 10px; color: #baff80; font-weight: 700;';
+        this._notificationCount.visible = false;
+        header.add_child(this._notificationCount);
         this._activityPin = this._makePinButton();
         header.add_child(this._activityPin);
         header.add_child(this._makeCloseButton());
@@ -1364,7 +1455,8 @@ export default class NovaExtension extends Extension {
         };
         const currentActivity = this._currentActivity();
         const viewMode = currentActivity
-            ? (Number.isFinite(currentActivity.percent) ? 'activity' : 'activity-simple')
+            ? (currentActivity.kind === 'notification' ? 'notification'
+                : Number.isFinite(currentActivity.percent) ? 'activity' : 'activity-simple')
             : this._displayMode;
         const {x, y, width, height} = getIslandGeometry(
             panel, monitor, this._expanded, viewMode, {
@@ -1421,6 +1513,7 @@ export default class NovaExtension extends Extension {
             GLib.Source.remove(this._activityExpireSource);
             this._activityExpireSource = 0;
         }
+        this._notificationQueue?.clear();
         if (this._activityTickSource) {
             GLib.Source.remove(this._activityTickSource);
             this._activityTickSource = 0;
@@ -1482,6 +1575,9 @@ export default class NovaExtension extends Extension {
         this._activityPin = null;
         this._activityTitle = null;
         this._activityDetail = null;
+        this._notificationSource = null;
+        this._notificationCount = null;
+        this._notificationQueue = null;
         this._activityIcon = null;
         this._activityStop = null;
         this._activityProgress = null;

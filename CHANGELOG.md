@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.7.0 — Rich notification previews (Fedora-tested)
+
+- Display the notification's title, message body, and source app separately
+- Use app-specific GIcons where the GNOME notification exposes one
+- Queue up to six pending notifications in FIFO order instead of overwriting
+  the current preview; show the count of pending alerts
+- Fail open to GNOME's regular banner when the queue is full, Nova is hidden,
+  or the session is locked; keep critical alerts native
+- Sanitize and bound text, add notification queue regression tests and
+  a manual Fedora test guide
+
+**Validation:** The maintainer confirmed notification handling with real Fedora desktop apps. JavaScript tests, GSettings schema validation and installable ZIP checks passed. Overflow, lock-screen, accessibility, and cross-GNOME-version behaviors still warrant additional testing.
+
 ## v0.6.0 — Customization and developer activities (Fedora-tested)
 
 - Preset capsule themes, preserving existing custom accent colors

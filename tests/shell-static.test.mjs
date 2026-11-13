@@ -115,7 +115,26 @@ test('the optional developer service starts and stops from settings', () => {
 });
 
 test('music animation sleeps when Nova is hidden and cleans up on disable', () => {
-    assert.match(extension, /notify::visible', \(\) => this\._syncWave\(\)/);
+    assert.match(extension, /notify::visible', \(\) => \{/);
+    assert.match(extension, /if \(!this\._island\.visible\)\s+this\._notificationQueue\.clear\(\)/);
     assert.match(extension, /this\._island\?\.visible !== false/);
     assert.match(extension, /this\._stopWave\(\)/);
+});
+
+test('GNOME notifications feed a bounded FIFO, never suppress banners on overflow', () => {
+    const monitor = readFileSync(new URL('../lib/activity-monitor.js', import.meta.url), 'utf8');
+    assert.match(monitor, /const accepted = this\._onPreview\(preview\) === true/);
+    assert.match(monitor, /if \(accepted && this\._settings\.get_boolean\('replace-native-notifications'\)/);
+    assert.match(extension, /this\._notificationQueue\.enqueue\(activity\)/);
+    assert.match(extension, /this\._notificationQueue\.next\(\)/);
+    assert.match(extension, /this\._notificationQueue\?\.clear\(\)/);
+    assert.match(extension, /currentActivity\.kind === 'notification' \? 'notification'/);
+});
+test('notification body, app name, and app gicon are shown as plain UI content', () => {
+    const monitor = readFileSync(new URL('../lib/activity-monitor.js', import.meta.url), 'utf8');
+    assert.match(monitor, /notificationPreview\(notification, source\)/);
+    assert.match(monitor, /preview\.gicon = this\._notificationIcon\(notification, source\)/);
+    assert.match(extension, /this\._notificationSource\.text = isNotification/);
+    assert.match(extension, /this\._activityDetail\.clutter_text\.line_wrap = isNotification/);
+    assert.match(extension, /gicon: activity\.gicon/);
 });

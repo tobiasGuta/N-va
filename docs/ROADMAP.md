@@ -23,6 +23,18 @@ behavior blindly. This is a living engineering plan, not a promise of dates.
 - [ ] Audit theme, keyboard focus, and reduced-motion behavior
 - [x] Owner confirmed theme, shortcut, developer API, music, downloads, notification and enable/disable tests
 
+## v0.7.0 — notification experience
+
+- [x] Preserve GNOME notification titles and message bodies as plain text
+- [x] Show app-provided GIcons with a safe generic fallback
+- [x] Add a bounded FIFO queue with visible pending count
+- [x] Keep native fallback for overflow, hidden mode and critical alerts
+- [x] Add pure queue/text tests and preview packaging CI
+- [x] Maintainer verified the richer previews with other Fedora desktop apps (specific app list not recorded)
+- [ ] Independently verify queue overflow, three-plus rapid alerts, and order on additional GNOME setups
+- [ ] Confirm GNOME notification history and critical alerts are unchanged
+- [ ] Check long messages, app icons, scaling, lock/fullscreen and disabling Nova
+
 ## Later exploration
 
 - PipeWire session-status integration: first define which recording and

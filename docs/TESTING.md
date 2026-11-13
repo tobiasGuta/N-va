@@ -19,6 +19,9 @@ release, test with the current Fedora/GNOME version and record the results.
 
 - [ ] MPRIS starts/stops in Firefox/Spotify/VLC as available.
 - [ ] Notifications preserve critical GNOME alerts and history.
+- [ ] Notification preview branch: run burst test, check app names,
+  message bodies, queue order, critical and overflow behavior using
+  [the notification testing guide](NOTIFICATIONS.md).
 - [ ] Volume and brightness show the actual value, not a stale reading.
 - [ ] Downloads: quick image, large file, renamed Firefox `.part`,
   Chromium `.crdownload`, cancellation and non-Downloads destination.

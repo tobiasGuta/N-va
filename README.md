@@ -3,9 +3,9 @@
 **A lightweight, Apple-inspired Dynamic Island for GNOME Shell.** Smooth animations, music controls, live desktop activities, a clock and calendar — **no AI, Electron, or background daemon**.
 
 [![Nova checks](https://github.com/tobiasGuta/N-va/actions/workflows/ci.yml/badge.svg)](https://github.com/tobiasGuta/N-va/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/badge/release-v0.6.0-blue)](https://github.com/tobiasGuta/N-va/releases/tag/v0.6.0)
+[![Release](https://img.shields.io/badge/release-v0.7.0-blue)](https://github.com/tobiasGuta/N-va/releases/tag/v0.7.0)
 
-**[Get Nova v0.6.0](https://github.com/tobiasGuta/N-va/releases/tag/v0.6.0)** · **[Installation](#install-on-fedora-gnome)** · **[Preferences](#preferences)** · **[Report a bug](https://github.com/tobiasGuta/N-va/issues/new/choose)**
+**[Get Nova v0.7.0](https://github.com/tobiasGuta/N-va/releases/tag/v0.7.0)** · **[Installation](#install-on-fedora-gnome)** · **[Preferences](#preferences)** · **[Report a bug](https://github.com/tobiasGuta/N-va/issues/new/choose)**
 
 ### Screenshots
 
@@ -60,6 +60,29 @@
 
 <sub>Real Fedora screenshots provided during development and cropped to highlight Nova. Some controls in the captures have since been refined.</sub>
 
+## What's new in v0.7.0
+
+**Nova now displays richer GNOME notifications.** Expanded previews separate
+the app name, title and message text; use an app-provided icon where available;
+and show a **bounded FIFO queue** instead of replacing every new alert.
+When multiple alerts arrive, up to six wait their turn and a small `+N`
+counter shows how many remain. Notification content is rendered as bounded,
+plain text.
+
+**Privacy and GNOME integration:** Nova does not store a second notification
+history. GNOME keeps its existing notification history, critical alerts stay
+native, and new alerts fall back to GNOME's banners when Nova cannot display
+them or its queue is full. Apps that bypass GNOME's notification system may
+not appear.
+
+**Tested on Fedora:** The maintainer confirmed that notification previews
+work well with other real desktop applications. Automated tests, schema
+validation, and packaging CI also pass. Lock-screen, queue-overflow, other
+GNOME versions, and long-term performance still need wider verification.
+
+See the [v0.7 release notes](docs/releases/v0.7.0.md) and
+[notification testing guide](docs/NOTIFICATIONS.md).
+
 ## What's new in v0.6.0
 
 This release builds on Fedora-tested v0.5.4, adding five capsule themes
@@ -92,7 +115,7 @@ See the [release notes](docs/releases/v0.6.0.md),
 - Play/pause, previous and next buttons (when the player supports them).
 - Hover to expand; use an icon-only pin button to keep Nova open while using other apps; close to collapse.
 - Countdown timers (5, 15, or 25 minutes) launched from the calendar and shown as live activities.
-- Native Nova notification previews, with an optional Nova-only mode that keeps GNOME history and critical alerts.
+- Rich GNOME notification previews with app names, message bodies, available app icons and a bounded FIFO queue; optional Nova-only banners preserve GNOME history and critical alerts.
 - Faster signal-driven volume indicators from GNOME Quick Settings and brightness updates from Mutter.
 - Optional experimental replacement of GNOME’s volume/brightness OSD with Nova’s own overlays, with safe restoration when disabled.
 - GNOME built-in screencast activity with elapsed time.
@@ -102,7 +125,7 @@ See the [release notes](docs/releases/v0.6.0.md),
 - Restores the original GNOME center clock when disabled.
 - Respects GNOME 51 reduced-motion preference; no AI or subprocesses. Optional HTTPS requests occur only for remote cover art during playback.
 
-**Status:** v0.6.0 is the latest Fedora-tested stable release, targeting GNOME Shell 49–51. Not all GNOME versions and themes have been independently verified; live activities use Shell APIs that may vary between setups. The calendar is local-only (no appointments). Nova can replace ordinary banners when the optional Nova-only setting is enabled; GNOME's critical alerts remain native.
+**Status:** v0.7.0 is the latest Fedora-tested stable release, targeting GNOME Shell 49–51. Not all GNOME versions and themes have been independently verified; live activities use Shell APIs that may vary between setups. The calendar is local-only (no appointments). Nova can replace ordinary banners when the optional Nova-only setting is enabled; GNOME's critical alerts remain native.
 
 ## Install on Fedora GNOME
 
@@ -113,7 +136,7 @@ See the [release notes](docs/releases/v0.6.0.md),
    gnome-shell --version
    ```
 
-2. For the tested source installation, clone and install locally (or get the ZIP from the [v0.6.0 release](https://github.com/tobiasGuta/N-va/releases/tag/v0.6.0)):
+2. For the tested source installation, clone and install locally (or get the ZIP from the [v0.7.0 release](https://github.com/tobiasGuta/N-va/releases/tag/v0.7.0)):
 
    ```bash
    git clone https://github.com/tobiasGuta/N-va.git
