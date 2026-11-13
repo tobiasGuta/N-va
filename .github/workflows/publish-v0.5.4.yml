@@ -1,0 +1,54 @@
+name: Publish Nova v0.5.4
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/publish-v0.5.4.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    if: github.repository == 'tobiasGuta/N-va'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verify source and tests
+        run: |
+          npm run check
+          glib-compile-schemas --strict --dry-run schemas
+
+      - name: Build installable GNOME extension ZIP
+        run: |
+          bash scripts/package.sh
+          unzip -Z1 dist/Nova-v0.5.4-GNOME.zip | grep -Fx metadata.json
+          unzip -Z1 dist/Nova-v0.5.4-GNOME.zip | grep -Fx prefs.js
+          unzip -Z1 dist/Nova-v0.5.4-GNOME.zip | grep -Fx schemas/gschemas.compiled
+          test "$(unzip -p dist/Nova-v0.5.4-GNOME.zip metadata.json |
+            python3 -c 'import json,sys; print(json.load(sys.stdin)["uuid"])')" = "nova@tobiasguta.github.io"
+          sha256sum dist/Nova-v0.5.4-GNOME.zip
+
+      - name: Publish GitHub release and asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view v0.5.4 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Nova v0.5.4 already exists. Refusing to create a duplicate."
+            exit 0
+          fi
+          gh release create v0.5.4 dist/Nova-v0.5.4-GNOME.zip \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "Nova v0.5.4 — First stable milestone" \
+            --notes-file docs/releases/v0.5.4.md \
+            --latest
