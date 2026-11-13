@@ -53,7 +53,8 @@ test('no visible PIN text remains in the island', () => {
 
 test('progress is rendered by a width-constrained fill inside a bar', () => {
     assert.match(extension, /_activityProgress\.add_child\(this\._activityBarFill\)/);
-    assert.match(extension, /_activityBarFill\.width = Math\.round/);
+    assert.match(extension, /_activityBarFill\.width = hasPercent/);
+    assert.match(extension, /Math\.round\(Math\.max\(0, Math\.min\(100, activity\.percent\)\)/);
 });
 
 test('Nova exposes preferences directly from the island', () => {
