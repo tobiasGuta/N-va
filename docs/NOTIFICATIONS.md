@@ -1,6 +1,8 @@
-# Notification previews — v0.7.0-dev
+# Notification previews — v0.7.0
 
-This is a development feature, not part of the latest stable v0.6.0 release.
+This feature is included in stable v0.7.0. The Fedora maintainer confirmed the
+richer previews with real desktop applications. The test scenarios below
+remain useful for wider compatibility testing.
 Nova listens to GNOME Shell's existing notification sources. It does **not**
 replace the freedesktop notification daemon or record a second history.
 
@@ -25,7 +27,7 @@ replace the freedesktop notification daemon or record a second history.
 
 ## Fedora testing
 
-After installing the development branch and logging out/back in, verify
+After installing v0.7.0 and logging out/back in, verify
 the extension is active and version **11**:
 
 ```bash
@@ -78,5 +80,5 @@ git pull origin main
 bash install.sh
 ```
 
-Log out and back in. v0.6.0 remains the stable GitHub release until
-the new behavior passes Fedora verification.
+Log out and back in. To return specifically to v0.6.0, install the ZIP
+from its existing GitHub release and log out/back in.

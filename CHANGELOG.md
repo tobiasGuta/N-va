@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased — v0.7.0-dev (notification previews)
+## v0.7.0 — Rich notification previews (Fedora-tested)
 
 - Display the notification's title, message body, and source app separately
 - Use app-specific GIcons where the GNOME notification exposes one
@@ -11,7 +11,7 @@
 - Sanitize and bound text, add notification queue regression tests and
   a manual Fedora test guide
 
-**Development only:** GNOME runtime/visual tests are still required before release.
+**Validation:** The maintainer confirmed notification handling with real Fedora desktop apps. JavaScript tests, GSettings schema validation and installable ZIP checks passed. Overflow, lock-screen, accessibility, and cross-GNOME-version behaviors still warrant additional testing.
 
 ## v0.6.0 — Customization and developer activities (Fedora-tested)
 

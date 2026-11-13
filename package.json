@@ -1,7 +1,7 @@
 {
   "name": "nova-gnome-island",
   "private": true,
-  "version": "0.7.0-dev",
+  "version": "0.7.0",
   "type": "module",
   "description": "A lightweight GNOME Dynamic Island",
   "scripts": {
