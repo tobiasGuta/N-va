@@ -10,12 +10,13 @@
 ### Screenshots
 
 
+
 <table>
   <tr>
     <td width="34%" align="center">
       <img
         src="assets/screenshots/desktop.webp"
-        alt="Nova compact music island floating in a transparent GNOME panel"
+        alt="Nova compact music island"
         width="100%"
       />
       <br/>
@@ -24,7 +25,7 @@
     <td width="33%" align="center">
       <img
         src="assets/screenshots/music1.webp"
-        alt="Nova expanded music controls with artwork and playback buttons"
+        alt="Nova expanded music controls"
         width="100%"
       />
       <br/>
@@ -40,7 +41,21 @@
       <sub>Additional music island preview</sub>
     </td>
   </tr>
+
+  <!-- Second row -->
+  <tr>
+    <td colspan="3" align="center">
+      <img
+        src="assets/screenshots/menu.webp"
+        alt="Nova menu"
+        width="45%"
+      />
+      <br/>
+      <sub>Menu</sub>
+    </td>
+  </tr>
 </table>
+
 
 
 <sub>Real Fedora screenshots provided during development and cropped to highlight Nova. Some controls in the captures have since been refined.</sub>
