@@ -391,7 +391,11 @@ export default class NovaExtension extends Extension {
         this._island.add_child(this._compactView);
         this._island.add_child(this._expandedView);
 
-        this._island.connect('notify::visible', () => this._syncWave());
+        this._island.connect('notify::visible', () => {
+            this._syncWave();
+            if (!this._island.visible)
+                this._notificationQueue.clear();
+        });
         this._island.connect('notify::hover', () => {
             if (this._island.hover) {
                 this._cancelCollapse();
@@ -515,6 +519,9 @@ export default class NovaExtension extends Extension {
             bar.style = `background-color: ${accent}; border-radius: 2px;`;
         if (this._badge)
             this._badge.style = `font-size: 9px; font-weight: 700; color: ${accent};`;
+        if (this._notificationCount)
+            this._notificationCount.style =
+                `font-size: 10px; font-weight: 700; color: ${accent};`;
         if (this._statusDot)
             this._statusDot.style = `background-color: ${accent}; border-radius: 4px;`;
         if (this._playPause)
@@ -880,12 +887,14 @@ export default class NovaExtension extends Extension {
                 this._transient = null;
                 if (!this._island)
                     return GLib.SOURCE_REMOVE;
-                if (this._settings?.get_boolean('show-notifications')) {
+                if (this._settings?.get_boolean('show-notifications') &&
+                    this._island.visible && !Main.sessionMode?.isLocked) {
                     const next = this._notificationQueue.next();
-                    if (next) {
-                        this._showPreview(next);
+                    if (next && this._showPreview(next))
                         return GLib.SOURCE_REMOVE;
-                    }
+                } else {
+                    // Avoid displaying old private notifications after unlock.
+                    this._notificationQueue.clear();
                 }
                 this._refreshPresentation(true);
                 if (!this._pinned && !this._island.hover &&

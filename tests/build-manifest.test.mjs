@@ -19,10 +19,11 @@ test('all runtime JS modules are included by packaging glob', () => {
     assert.match(pkg, /"\$\{ROOT\}"\/lib\/\*\.js/);
     assert.match(installer, /"\$\{SOURCE_DIR\}"\/lib\/\*\.js/);
     assert.ok(readdirSync(join(root, 'lib')).includes('live-activity.js'));
+    assert.ok(readdirSync(join(root, 'lib')).includes('notification-preview.js'));
 });
 
 test('dev metadata is deliberately distinct from latest stable release', () => {
-    assert.equal(JSON.parse(read('package.json')).version, '0.6.0');
+    assert.equal(JSON.parse(read('package.json')).version, '0.7.0-dev');
     assert.equal(JSON.parse(read('metadata.json')).uuid, 'nova@tobiasguta.github.io');
     assert.ok(read('README.md').includes('v0.5.4'));
 });

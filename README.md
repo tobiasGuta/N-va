@@ -60,6 +60,35 @@
 
 <sub>Real Fedora screenshots provided during development and cropped to highlight Nova. Some controls in the captures have since been refined.</sub>
 
+## Development preview: v0.7.0-dev notification upgrade
+
+A new notification-focused development branch adds readable app names,
+notification titles and message bodies, app-specific icons when GNOME provides
+them, and a **bounded FIFO preview queue**. When the queue is full or Nova
+is hidden/locked, notifications are left to GNOME instead of being silently
+suppressed. Critical notifications still use GNOME's native behavior;
+history remains in GNOME.
+
+This feature is **not part of stable v0.6.0 yet**. It has automated tests but
+still needs hands-on Fedora/GNOME visual and behavior verification.
+
+To try it in a separate Git worktree:
+
+```bash
+cd ~/N-va
+git fetch origin
+git worktree add ../N-va-notify origin/feat/notification-preview-queue
+cd ../N-va-notify
+bash install.sh
+```
+
+Log out and back in on Wayland. This uses Nova's existing extension UUID:
+installing the preview **replaces the installed copy** until you reinstall
+from your stable `~/N-va` checkout.
+
+See the [notification test guide](docs/NOTIFICATIONS.md) for quick tests and
+known limitations.
+
 ## What's new in v0.6.0
 
 This release builds on Fedora-tested v0.5.4, adding five capsule themes
