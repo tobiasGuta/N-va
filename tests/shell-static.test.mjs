@@ -92,3 +92,15 @@ test('download notices do not show a fake percentage progress bar', () => {
     assert.match(extension, /this\._activityFooter\.visible = hasPercent/);
     assert.doesNotMatch(extension, /_activityBarFill\.width = 52/);
 });
+
+test('keyboard binding is limited to normal Shell mode and torn down on disable', () => {
+    assert.match(extension, /Main\.wm\.addKeybinding\(/);
+    assert.match(extension, /Shell\.ActionMode\.NORMAL/);
+    assert.match(extension, /this\._unbindShortcut\(\)/);
+    assert.match(extension, /Main\.wm\.removeKeybinding\('toggle-shortcut'\)/);
+});
+
+test('static notifications do not rebuild their actor tree every second', () => {
+    assert.match(extension, /if \(!this\._transient && \(this\._timerTarget \|\| this\._recording\)\)/);
+    assert.match(extension, /if \(this\._lastActivityIcon !== activityIcon\)/);
+});

@@ -6,6 +6,9 @@
     <key name="expanded-width" type="i"><default>328</default><range min="300" max="430"/></key>
     <key name="animation-duration" type="i"><default>240</default><range min="100" max="500"/></key>
     <key name="accent-color" type="s"><default>'#baff80'</default></key>
+    <key name="theme-preset" type="s"><default>'custom'</default></key>
+    <key name="toggle-shortcut" type="as"><default>[]</default></key>
+    <key name="show-media-visualizer" type="b"><default>true</default></key>
     <key name="show-notifications" type="b"><default>true</default></key>
     <key name="replace-native-notifications" type="b"><default>true</default></key>
     <key name="show-volume" type="b"><default>true</default></key>
