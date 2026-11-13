@@ -9,18 +9,39 @@
 
 ### Screenshots
 
+
 <table>
-<tr>
-<td width="53%" align="center">
-<img src="assets/screenshots/desktop.webp" alt="Nova compact music island floating in a transparent GNOME panel" width="720"/>
-<sub>Compact island with floating top bar</sub>
-</td>
-<td width="47%" align="center">
-<img src="assets/screenshots/music.webp" alt="Nova expanded music controls with artwork and playback buttons" width="450"/>
-<sub>Expanded MPRIS music card</sub>
-</td>
-</tr>
+  <tr>
+    <td width="34%" align="center">
+      <img
+        src="assets/screenshots/desktop.webp"
+        alt="Nova compact music island floating in a transparent GNOME panel"
+        width="100%"
+      />
+      <br/>
+      <sub>Compact island with floating top bar</sub>
+    </td>
+    <td width="33%" align="center">
+      <img
+        src="assets/screenshots/music.webp"
+        alt="Nova expanded music controls with artwork and playback buttons"
+        width="100%"
+      />
+      <br/>
+      <sub>Expanded MPRIS music card</sub>
+    </td>
+    <td width="33%" align="center">
+      <img
+        src="assets/screenshots/music2.webp"
+        alt="Nova music island preview"
+        width="100%"
+      />
+      <br/>
+      <sub>Additional music island preview</sub>
+    </td>
+  </tr>
 </table>
+
 
 <sub>Real Fedora screenshots provided during development and cropped to highlight Nova. Some controls in the captures have since been refined.</sub>
 
