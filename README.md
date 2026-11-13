@@ -3,9 +3,9 @@
 **A lightweight, Apple-inspired Dynamic Island for GNOME Shell.** Smooth animations, music controls, live desktop activities, a clock and calendar — **no AI, Electron, or background daemon**.
 
 [![Nova checks](https://github.com/tobiasGuta/N-va/actions/workflows/ci.yml/badge.svg)](https://github.com/tobiasGuta/N-va/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/badge/release-v0.5.4-blue)](https://github.com/tobiasGuta/N-va/releases/tag/v0.5.4)
+[![Release](https://img.shields.io/badge/release-v0.6.0-blue)](https://github.com/tobiasGuta/N-va/releases/tag/v0.6.0)
 
-**[Get Nova v0.5.4](https://github.com/tobiasGuta/N-va/releases/tag/v0.5.4)** · **[Installation](#install-on-fedora-gnome)** · **[Preferences](#preferences)** · **[Report a bug](https://github.com/tobiasGuta/N-va/issues/new/choose)**
+**[Get Nova v0.6.0](https://github.com/tobiasGuta/N-va/releases/tag/v0.6.0)** · **[Installation](#install-on-fedora-gnome)** · **[Preferences](#preferences)** · **[Report a bug](https://github.com/tobiasGuta/N-va/issues/new/choose)**
 
 ### Screenshots
 
@@ -60,7 +60,26 @@
 
 <sub>Real Fedora screenshots provided during development and cropped to highlight Nova. Some controls in the captures have since been refined.</sub>
 
-## Features in v0.5.4
+## What's new in v0.6.0
+
+This release builds on Fedora-tested v0.5.4, adding five capsule themes
+(Custom, Mint, Ocean, Violet, Sunset), an optional keyboard shortcut,
+more efficient music and activity rendering, a music-visualizer toggle,
+and a **disabled-by-default local D-Bus API** for developer activity cards.
+
+The changes have passed automated JavaScript and package checks and
+the maintainer's Fedora desktop tests for **themes, shortcut, developer API,
+music, downloads, notifications, and enable/disable behavior**.
+Tests have not yet established performance metrics or runtime
+compatibility on every GNOME 49–51 setup.
+
+See the [release notes](docs/releases/v0.6.0.md),
+[roadmap](docs/ROADMAP.md),
+[developer activity API](docs/developer-api.md),
+[architecture](docs/ARCHITECTURE.md), and
+[manual test plan](docs/TESTING.md).
+
+## Core features
 
 - Compact, centered black pill fitted to the GNOME panel height, with smooth expand/collapse and content fade-in.
 - Default compact clock with local time and weekday; expanded month-view calendar with navigation.
@@ -83,7 +102,7 @@
 - Restores the original GNOME center clock when disabled.
 - Respects GNOME 51 reduced-motion preference; no AI or subprocesses. Optional HTTPS requests occur only for remote cover art during playback.
 
-**Status:** v0.5.4 is our first Fedora-tested stable milestone, targeting GNOME Shell 49–51. Not all GNOME versions and themes have been independently verified; live activities use Shell APIs that may vary between setups. The calendar is local-only (no appointments). Nova can replace ordinary banners when the optional Nova-only setting is enabled; GNOME's critical alerts remain native.
+**Status:** v0.6.0 is the latest Fedora-tested stable release, targeting GNOME Shell 49–51. Not all GNOME versions and themes have been independently verified; live activities use Shell APIs that may vary between setups. The calendar is local-only (no appointments). Nova can replace ordinary banners when the optional Nova-only setting is enabled; GNOME's critical alerts remain native.
 
 ## Install on Fedora GNOME
 
@@ -94,7 +113,7 @@
    gnome-shell --version
    ```
 
-2. For the tested source installation, clone and install locally (or get the ZIP from the [v0.5.4 release](https://github.com/tobiasGuta/N-va/releases/tag/v0.5.4)):
+2. For the tested source installation, clone and install locally (or get the ZIP from the [v0.6.0 release](https://github.com/tobiasGuta/N-va/releases/tag/v0.6.0)):
 
    ```bash
    git clone https://github.com/tobiasGuta/N-va.git
@@ -145,6 +164,11 @@ playerctl metadata
 `playerctl` is **not** a Nova runtime dependency.
 
 ## Preferences
+
+New in v0.6.0: appearance includes theme presets (Custom, Mint,
+Ocean, Violet, Sunset), an optional shortcut (off by default), and a toggle
+for animated music bars. In Live activities, opt in to the local developer API
+only if you want same-user apps to display short status messages.
 
 Open **Extensions → Nova → Preferences**, click the small gear button inside Nova’s expanded calendar or music player, or run:
 

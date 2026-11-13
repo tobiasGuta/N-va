@@ -1,0 +1,55 @@
+name: Publish Nova v0.6.0
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/publish-v0.6.0.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    if: github.repository == 'tobiasGuta/N-va'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verify JavaScript tests and GSettings schema
+        run: |
+          npm run check
+          glib-compile-schemas --strict --dry-run schemas
+
+      - name: Assemble installable GNOME ZIP
+        run: |
+          bash scripts/package.sh
+          unzip -t dist/Nova-v0.6.0-GNOME.zip
+          unzip -Z1 dist/Nova-v0.6.0-GNOME.zip | grep -Fx lib/live-activity.js
+          unzip -Z1 dist/Nova-v0.6.0-GNOME.zip | grep -Fx lib/themes.js
+          unzip -Z1 dist/Nova-v0.6.0-GNOME.zip | grep -Fx schemas/gschemas.compiled
+          test "$(unzip -p dist/Nova-v0.6.0-GNOME.zip metadata.json |
+            python3 -c 'import json,sys; print(json.load(sys.stdin)["version"])')" = "10"
+          sha256sum dist/Nova-v0.6.0-GNOME.zip
+
+      - name: Publish versioned GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view v0.6.0 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "v0.6.0 already exists; refusing duplicate release."
+            exit 0
+          fi
+          gh release create v0.6.0 dist/Nova-v0.6.0-GNOME.zip \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "Nova v0.6.0 — More personal. More Linux-native." \
+            --notes-file docs/releases/v0.6.0.md \
+            --latest

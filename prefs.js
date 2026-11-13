@@ -3,6 +3,7 @@ import Gio from 'gi://Gio';
 import Gtk from 'gi://Gtk';
 
 import {ExtensionPreferences} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
+import {THEME_PRESETS, KEYBOARD_SHORTCUTS, validShortcut} from './lib/themes.js';
 
 export default class NovaPreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
@@ -43,13 +44,61 @@ export default class NovaPreferences extends ExtensionPreferences {
             [behavior, 'show-brightness', 'Brightness', 'Show compatible laptop screen brightness changes'],
             [behavior, 'show-recording', 'Screen recording', 'Show GNOME’s built-in screencast status'],
             [behavior, 'show-downloads', 'Downloads', 'Watch the default Downloads folder for activity'],
-            [behavior, 'show-timer', 'Timer', 'Enable countdown timers in the calendar']
+            [behavior, 'show-timer', 'Timer', 'Enable countdown timers in the calendar'],
+            [behavior, 'show-media-visualizer', 'Animated music bars',
+                'Disable the decorative animation to minimize CPU activity'],
+            [behavior, 'developer-activities', 'Developer activity API',
+                'Opt-in: accept short local D-Bus status cards from same-user apps']
         );
         for (const [group, key, title, subtitle] of toggles) {
             const row = new Adw.SwitchRow({title, subtitle});
             group.add(row);
             settings.bind(key, row, 'active', Gio.SettingsBindFlags.DEFAULT);
         }
+
+        const presetRow = new Adw.ComboRow({
+            title: 'Island theme',
+            subtitle: 'Choose a color palette or keep your custom accent',
+            model: Gtk.StringList.new(THEME_PRESETS.map(item => item.name)),
+        });
+        appearance.add(presetRow);
+        presetRow.selected = Math.max(0, THEME_PRESETS.findIndex(
+            item => item.id === settings.get_string('theme-preset')
+        ));
+        presetRow.connect('notify::selected', () => {
+            const selected = THEME_PRESETS[presetRow.selected];
+            if (selected && settings.get_string('theme-preset') !== selected.id)
+                settings.set_string('theme-preset', selected.id);
+        });
+        settings.connect('changed::theme-preset', () => {
+            const index = THEME_PRESETS.findIndex(
+                item => item.id === settings.get_string('theme-preset')
+            );
+            if (index >= 0 && presetRow.selected !== index)
+                presetRow.selected = index;
+        });
+
+        const shortcutRow = new Adw.ComboRow({
+            title: 'Toggle Nova shortcut',
+            subtitle: 'Optional shortcut; disabled by default to avoid conflicts',
+            model: Gtk.StringList.new(KEYBOARD_SHORTCUTS.map(item => item.name)),
+        });
+        appearance.add(shortcutRow);
+        const getShortcutIndex = () => Math.max(0, KEYBOARD_SHORTCUTS.findIndex(
+            item => item.accelerator === validShortcut(settings.get_strv('toggle-shortcut'))
+        ));
+        shortcutRow.selected = getShortcutIndex();
+        shortcutRow.connect('notify::selected', () => {
+            const selected = KEYBOARD_SHORTCUTS[shortcutRow.selected];
+            if (selected)
+                settings.set_strv('toggle-shortcut',
+                    selected.accelerator ? [selected.accelerator] : []);
+        });
+        settings.connect('changed::toggle-shortcut', () => {
+            const index = getShortcutIndex();
+            if (shortcutRow.selected !== index)
+                shortcutRow.selected = index;
+        });
 
         for (const [key, title, min, max] of [
             ['compact-width', 'Compact pill width', 132, 240],
@@ -87,8 +136,11 @@ export default class NovaPreferences extends ExtensionPreferences {
         appearance.add(color);
         // Keep invalid text out of the live stylesheet.
         color.connect('changed', () => {
-            if (/^#[0-9a-fA-F]{6}$/.test(color.text))
+            if (/^#[0-9a-fA-F]{6}$/.test(color.text)) {
                 settings.set_string('accent-color', color.text);
+                // Editing the color intentionally returns to Custom mode.
+                settings.set_string('theme-preset', 'custom');
+            }
         });
     }
 }

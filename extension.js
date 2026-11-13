@@ -1,4 +1,6 @@
 import Clutter from 'gi://Clutter';
+import Meta from 'gi://Meta';
+import Shell from 'gi://Shell';
 import GLib from 'gi://GLib';
 import St from 'gi://St';
 
@@ -9,7 +11,9 @@ import {MprisService} from './lib/mpris.js';
 import {ArtworkLoader} from './lib/artwork.js';
 import {waveFrame} from './lib/waveform.js';
 import {getIslandGeometry} from './lib/geometry.js';
+import {resolveTheme, validShortcut} from './lib/themes.js';
 import {ActivityMonitor} from './lib/activity-monitor.js';
+import {LiveActivityService} from './lib/live-activity.js';
 import {osdPreview} from './lib/osd-utils.js';
 import {percentage, remainingSeconds, durationLabel} from './lib/activity-utils.js';
 import {activeMode, compactClock, fullClock, longDate, monthCells, monthLabel, weekdayLabels} from './lib/clock.js';
@@ -17,7 +21,7 @@ import {activeMode, compactClock, fullClock, longDate, monthCells, monthLabel, w
 const COMPACT_WIDTH = 166;
 const COMPACT_HEIGHT = 32;
 const COLLAPSE_DELAY_MS = 650;
-const WAVE_INTERVAL_MS = 180;
+const WAVE_INTERVAL_MS = 220;
 
 function icon(name, styleClass = 'nova-icon', size = 15, color = '#f7f7f8') {
     return new St.Icon({
@@ -111,6 +115,9 @@ export default class NovaExtension extends Extension {
         this._osdHookEnabled = false;
         this._lastPreview = null;
         this._settingsChangedId = 0;
+        this._shortcutBound = false;
+        this._liveActivityService = null;
+        this._lastActivityIcon = null;
         this._settings = this.getSettings();
 
         this._buildUi();
@@ -160,6 +167,8 @@ export default class NovaExtension extends Extension {
             recording => this._recordingChanged(recording)
         );
         this._activities.start();
+        this._bindShortcut();
+        this._syncDeveloperApi();
         this._syncNativeOsd();
         this._applyAppearance();
     }
@@ -378,6 +387,7 @@ export default class NovaExtension extends Extension {
         this._island.add_child(this._compactView);
         this._island.add_child(this._expandedView);
 
+        this._island.connect('notify::visible', () => this._syncWave());
         this._island.connect('notify::hover', () => {
             if (this._island.hover) {
                 this._cancelCollapse();
@@ -401,10 +411,7 @@ export default class NovaExtension extends Extension {
             this._badge.text = 'NOW PLAYING';
         }
         this._updateArt(playing ? player?.artUrl : null);
-        if (playing)
-            this._startWave();
-        else
-            this._stopWave();
+        this._syncWave();
 
         this._playPause.set_child(icon(
             'media-playback-pause-symbolic', 'nova-control-icon', 15, '#111315'
@@ -427,12 +434,79 @@ export default class NovaExtension extends Extension {
     }
 
     _accentColor() {
-        const chosen = this._settings?.get_string('accent-color') ?? '#baff80';
-        return /^#[0-9a-fA-F]{6}$/.test(chosen) ? chosen : '#baff80';
+        return this._theme().accent;
+    }
+
+    _theme() {
+        return resolveTheme(
+            this._settings?.get_string('theme-preset') ?? 'custom',
+            this._settings?.get_string('accent-color') ?? '#baff80'
+        );
+    }
+
+    _syncDeveloperApi() {
+        if (!this._settings?.get_boolean('developer-activities')) {
+            this._liveActivityService?.destroy();
+            this._liveActivityService = null;
+            return;
+        }
+        if (this._liveActivityService)
+            return;
+        try {
+            this._liveActivityService = new LiveActivityService(
+                activity => this._showPreview(activity)
+            );
+            this._liveActivityService.start();
+        } catch (error) {
+            console.warn('Nova: developer API unavailable: ' + error.message);
+            this._liveActivityService?.destroy();
+            this._liveActivityService = null;
+        }
+    }
+
+    _bindShortcut() {
+        if (!this._settings || this._shortcutBound)
+            return;
+        if (!validShortcut(this._settings.get_strv('toggle-shortcut')))
+            return;
+        try {
+            Main.wm.addKeybinding(
+                'toggle-shortcut',
+                this._settings,
+                Meta.KeyBindingFlags.NONE,
+                Shell.ActionMode.NORMAL,
+                () => {
+                    if (!this._island)
+                        return;
+                    if (this._expanded) {
+                        this._setPinned(false);
+                        this._setExpanded(false);
+                    } else {
+                        this._setExpanded(true);
+                        this._setPinned(true);
+                    }
+                }
+            );
+            this._shortcutBound = true;
+        } catch (error) {
+            console.warn('Nova: shortcut unavailable: ' + error.message);
+        }
+    }
+
+    _unbindShortcut() {
+        if (!this._shortcutBound)
+            return;
+        Main.wm.removeKeybinding('toggle-shortcut');
+        this._shortcutBound = false;
     }
 
     _applyAppearance() {
-        const accent = this._accentColor();
+        const {accent, background} = this._theme();
+        if (this._island) {
+            this._island.style =
+                `background-color: ${background}; color: #f8fafc; ` +
+                'border: 1px solid rgba(255,255,255,0.12); border-radius: 21px;';
+        }
         for (const bar of this._waveBars ?? [])
             bar.style = `background-color: ${accent}; border-radius: 2px;`;
         if (this._badge)
@@ -445,6 +519,10 @@ export default class NovaExtension extends Extension {
             this._activityBarFill.style = `background-color: ${accent}; border-radius: 3px;`;
         if (this._pinned)
             this._setPinned(true);
+        if (this._dayButtons)
+            this._populateCalendar();
+        if (this._displayMode !== 'activity' && !this._currentActivity())
+            this._renderArtwork(this._lastGicon);
     }
 
     _handleNativeOsd(args) {
@@ -579,8 +657,16 @@ export default class NovaExtension extends Extension {
             this._syncNativeOsd();
         else if (key === 'compact-width' || key === 'expanded-width')
             this._position(false);
-        else if (key === 'accent-color')
+        else if (key === 'accent-color' || key === 'theme-preset')
             this._applyAppearance();
+        else if (key === 'toggle-shortcut') {
+            this._unbindShortcut();
+            this._bindShortcut();
+        } else if (key === 'show-media-visualizer') {
+            this._syncWave();
+        } else if (key === 'developer-activities') {
+            this._syncDeveloperApi();
+        }
         else if (key === 'show-timer' && !this._settings.get_boolean(key)) {
             this._timerTarget = 0;
             this._refreshPresentation(true);
@@ -636,7 +722,8 @@ export default class NovaExtension extends Extension {
         this._musicView.visible = !activity && playing;
         this._calendarView.visible = !activity && !playing;
         this._activityView.visible = Boolean(activity);
-        this._wave.visible = !activity && playing;
+        this._wave.visible = !activity && playing &&
+            this._settings?.get_boolean('show-media-visualizer');
         this._statusDot.visible = false;
 
         if (activity) {
@@ -647,16 +734,18 @@ export default class NovaExtension extends Extension {
                         ? `${activity.title} ${activity.detail}`
                         : activity.title, 18
             );
-            this._compactArt.set_child(icon(
-                activity.icon ?? 'dialog-information-symbolic',
-                'nova-activity-compact-icon', 13, this._accentColor()
-            ));
+            const activityIcon = activity.icon ?? 'dialog-information-symbolic';
+            if (this._lastActivityIcon !== activityIcon) {
+                this._compactArt.set_child(icon(
+                    activityIcon, 'nova-activity-compact-icon', 13, this._accentColor()
+                ));
+                this._activityIcon.set_child(icon(
+                    activityIcon, 'nova-activity-icon', 24, this._accentColor()
+                ));
+                this._lastActivityIcon = activityIcon;
+            }
             this._activityTitle.text = clipped(activity.title ?? '', 33);
             this._activityDetail.text = clipped(activity.detail ?? '', 43);
-            this._activityIcon.set_child(icon(
-                activity.icon ?? 'dialog-information-symbolic',
-                'nova-activity-icon', 24, this._accentColor()
-            ));
             this._activityStop.visible = activity.kind === 'timer';
             const hasPercent = Number.isFinite(activity.percent);
             // A bar represents an actual measured percentage. File-system
@@ -669,6 +758,7 @@ export default class NovaExtension extends Extension {
                 ? Math.round(Math.max(0, Math.min(100, activity.percent)) * 2.25)
                 : 0;
         } else {
+            this._lastActivityIcon = null;
             this._compactText.text = playing
                 ? clipped(this._playerState?.title ?? '', 17)
                 : compactClock(new Date());
@@ -782,7 +872,10 @@ export default class NovaExtension extends Extension {
                 title: 'Timer finished', detail: 'Time is up', duration: 4500,
             });
         }
-        if (this._currentActivity())
+        // Notifications and OSD previews are static. Rebuilding their actors
+        // once per second created needless work; only live timers and recording
+        // elapsed time need the continuous update.
+        if (!this._transient && (this._timerTarget || this._recording))
             this._refreshPresentation(false);
     }
 
@@ -878,7 +971,7 @@ export default class NovaExtension extends Extension {
                 y_align: Clutter.ActorAlign.CENTER,
             })
             : icon(fallback, 'nova-art-fallback',
-                size < 20 ? 13 : 23, '#baff80');
+                size < 20 ? 13 : 23, this._accentColor());
 
         this._artwork.set_child(picture(44, 'audio-x-generic-symbolic'));
         const fallback = this._displayMode === 'music'
@@ -909,13 +1002,34 @@ export default class NovaExtension extends Extension {
         });
     }
 
+    _syncWave() {
+        const enabled = this._displayMode === 'music' &&
+            this._settings?.get_boolean('show-media-visualizer') &&
+            this._island?.visible !== false &&
+            !Main.sessionMode?.isLocked &&
+            !this._reduceMotion();
+        if (this._wave)
+            this._wave.visible = Boolean(enabled && !this._currentActivity());
+        if (this._waveExpanded)
+            this._waveExpanded.visible = Boolean(enabled);
+        if (enabled)
+            this._startWave();
+        else
+            this._stopWave();
+    }
+
     _startWave() {
-        if (this._waveSource || this._reduceMotion())
+        if (this._waveSource || this._reduceMotion() ||
+            !this._settings?.get_boolean('show-media-visualizer'))
             return;
         this._waveStep = 0;
         this._waveSource = GLib.timeout_add(
             GLib.PRIORITY_DEFAULT, WAVE_INTERVAL_MS, () => {
                 if (!this._island || this._displayMode !== 'music') {
+                    this._waveSource = 0;
+                    return GLib.SOURCE_REMOVE;
+                }
+                if (!this._island.visible || Main.sessionMode?.isLocked) {
                     this._waveSource = 0;
                     return GLib.SOURCE_REMOVE;
                 }
@@ -966,7 +1080,7 @@ export default class NovaExtension extends Extension {
             if (!button)
                 continue;
             button.style = pinned
-                ? 'background-color: #baff80; color: #111315; border-radius: 11px;'
+                ? `background-color: ${this._accentColor()}; color: #111315; border-radius: 11px;`
                 : 'background-color: #1a1c20; color: #b9bec7; border-radius: 11px;';
             button.set_accessible_name(
                 pinned ? 'Unpin Nova' : 'Keep Nova expanded'
@@ -1180,7 +1294,7 @@ export default class NovaExtension extends Extension {
             const button = this._dayButtons[index];
             button.get_child().text = String(cell.day);
             button.style = cell.isToday
-                ? 'background-color: #baff80; color: #101315; border-radius: 11px;'
+                ? `background-color: ${this._accentColor()}; color: #101315; border-radius: 11px;`
                 : cell.inMonth
                     ? 'background-color: transparent; color: #f8fafc; border-radius: 11px;'
                     : 'background-color: transparent; color: #666c76; border-radius: 11px;';
@@ -1311,6 +1425,9 @@ export default class NovaExtension extends Extension {
             GLib.Source.remove(this._activityTickSource);
             this._activityTickSource = 0;
         }
+        this._liveActivityService?.destroy();
+        this._liveActivityService = null;
+        this._unbindShortcut();
         this._restoreNativeOsd();
         this._activities?.destroy();
         this._activities = null;
@@ -1377,6 +1494,7 @@ export default class NovaExtension extends Extension {
         this._lastGicon = null;
         this._transient = null;
         this._lastPreview = null;
+        this._lastActivityIcon = null;
         this._pinned = false;
         this._playerState = null;
     }
