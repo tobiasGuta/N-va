@@ -113,3 +113,9 @@ test('the optional developer service starts and stops from settings', () => {
     assert.match(service, /Gio\.bus_unown_name\(/);
     assert.doesNotMatch(service, /Gio\\.Subprocess|GLib\\.spawn_|child_process/);
 });
+
+test('music animation sleeps when Nova is hidden and cleans up on disable', () => {
+    assert.match(extension, /notify::visible', \(\) => this\._syncWave\(\)/);
+    assert.match(extension, /this\._island\?\.visible !== false/);
+    assert.match(extension, /this\._stopWave\(\)/);
+});

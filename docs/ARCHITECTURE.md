@@ -43,7 +43,8 @@ disappear if Nova's replacement cannot be shown.
 - Download monitoring is restricted to the configured XDG Downloads folder.
 - Developer activity API is **disabled by default**, limited to brief local
   status text and bounded progress, and never accepts markup, file paths,
-  arbitrary icons or network URLs.
+  arbitrary icons or network URLs for loading or execution. Client strings
+  are sanitized and used only as display text.
 - D-Bus on the same session is **not** an identity or permission boundary:
   other same-user processes can submit previews while opted in.
 

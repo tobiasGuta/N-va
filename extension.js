@@ -387,6 +387,7 @@ export default class NovaExtension extends Extension {
         this._island.add_child(this._compactView);
         this._island.add_child(this._expandedView);
 
+        this._island.connect('notify::visible', () => this._syncWave());
         this._island.connect('notify::hover', () => {
             if (this._island.hover) {
                 this._cancelCollapse();
@@ -1004,6 +1005,8 @@ export default class NovaExtension extends Extension {
     _syncWave() {
         const enabled = this._displayMode === 'music' &&
             this._settings?.get_boolean('show-media-visualizer') &&
+            this._island?.visible !== false &&
+            !Main.sessionMode?.isLocked &&
             !this._reduceMotion();
         if (this._wave)
             this._wave.visible = Boolean(enabled && !this._currentActivity());
@@ -1026,8 +1029,10 @@ export default class NovaExtension extends Extension {
                     this._waveSource = 0;
                     return GLib.SOURCE_REMOVE;
                 }
-                if (!this._island.visible || Main.sessionMode?.isLocked)
-                    return GLib.SOURCE_CONTINUE;
+                if (!this._island.visible || Main.sessionMode?.isLocked) {
+                    this._waveSource = 0;
+                    return GLib.SOURCE_REMOVE;
+                }
                 const frame = waveFrame(this._waveStep);
                 for (const [index, bar] of this._waveBars.entries()) {
                     bar.ease({

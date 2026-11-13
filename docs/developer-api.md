@@ -40,7 +40,8 @@ build or inspect your terminal.
 | `durationMs` | uint32 | Clamped to 1.2–8 seconds |
 
 - Only fixed, built-in symbolic icons are accepted.
-- No markup, paths, files, or network URLs are accepted.
+- Arguments are plain display text and a number; Nova does not interpret
+  input as markup, file paths, URLs, shell commands or icon identifiers.
 - Calls are rate-limited to approximately one preview every 350 ms.
 - Closing/disabling Nova unexports its D-Bus object and releases the name.
 - The session API is not intended to be a privileged system-monitor service.
