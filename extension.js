@@ -627,7 +627,9 @@ export default class NovaExtension extends Extension {
             return;
         const activity = this._currentActivity();
         const playing = this._displayMode === 'music';
-        const next = activity ? 'activity' : this._displayMode;
+        const next = activity
+            ? (Number.isFinite(activity.percent) ? 'activity' : 'activity-simple')
+            : this._displayMode;
         const changed = this._presentedMode !== next;
         this._presentedMode = next;
 
@@ -657,17 +659,15 @@ export default class NovaExtension extends Extension {
             ));
             this._activityStop.visible = activity.kind === 'timer';
             const hasPercent = Number.isFinite(activity.percent);
-            this._activityProgress.visible =
-                hasPercent || activity.kind === 'download';
-            if (hasPercent) {
-                this._activityBarFill.width = Math.round(
-                    Math.max(0, Math.min(100, activity.percent)) * 2.25
-                );
-            } else if (activity.kind === 'download') {
-                // A small indeterminate bar; the text shows actual received
-                // bytes, never a fabricated percentage.
-                this._activityBarFill.width = 52;
-            }
+            // A bar represents an actual measured percentage. File-system
+            // downloads cannot provide a trustworthy total size, so no
+            // misleading 20%-looking bar appears after a save.
+            this._activityProgress.visible = hasPercent;
+            this._activityFooter.visible = hasPercent ||
+                activity.kind === 'timer';
+            this._activityBarFill.width = hasPercent
+                ? Math.round(Math.max(0, Math.min(100, activity.percent)) * 2.25)
+                : 0;
         } else {
             this._compactText.text = playing
                 ? clipped(this._playerState?.title ?? '', 17)
@@ -856,6 +856,7 @@ export default class NovaExtension extends Extension {
         this._activityStop.set_accessible_name('Stop timer');
         this._activityStop.connect('clicked', () => this._stopTimer());
         footer.add_child(this._activityStop);
+        this._activityFooter = footer;
         view.add_child(footer);
         return view;
     }
@@ -1247,9 +1248,12 @@ export default class NovaExtension extends Extension {
             height: Main.panel.get_height() ||
                 Main.layoutManager.panelBox?.height || COMPACT_HEIGHT + 6,
         };
+        const currentActivity = this._currentActivity();
+        const viewMode = currentActivity
+            ? (Number.isFinite(currentActivity.percent) ? 'activity' : 'activity-simple')
+            : this._displayMode;
         const {x, y, width, height} = getIslandGeometry(
-            panel, monitor, this._expanded,
-            this._currentActivity() ? 'activity' : this._displayMode, {
+            panel, monitor, this._expanded, viewMode, {
                 compactWidth: this._settings?.get_int('compact-width') ?? 166,
                 expandedWidth: this._settings?.get_int('expanded-width') ?? 328,
             }
@@ -1364,6 +1368,7 @@ export default class NovaExtension extends Extension {
         this._activityIcon = null;
         this._activityStop = null;
         this._activityProgress = null;
+        this._activityFooter = null;
         this._activityBarFill = null;
         this._timerRow = null;
         this._settings = null;

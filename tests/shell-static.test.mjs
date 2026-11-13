@@ -85,3 +85,9 @@ test('Nova does not suppress native OSD while the island is hidden or locked', (
     assert.match(extension, /!this\._island\.visible/);
     assert.match(extension, /Main\.sessionMode\?\.isLocked/);
 });
+
+test('download notices do not show a fake percentage progress bar', () => {
+    assert.match(extension, /this\._activityProgress\.visible = hasPercent/);
+    assert.match(extension, /this\._activityFooter\.visible = hasPercent/);
+    assert.doesNotMatch(extension, /_activityBarFill\.width = 52/);
+});

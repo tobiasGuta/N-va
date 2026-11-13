@@ -52,3 +52,12 @@ test('configurable pill dimensions respect user preferences', () => {
     assert.equal(getIslandGeometry(panel, panel, false, 'clock', options).width, 188);
     assert.equal(getIslandGeometry(panel, panel, true, 'clock', options).width, 380);
 });
+
+test('non-progress activity cards are shorter than percentage OSD cards', () => {
+    const panel = {x: 0, y: 0, width: 1648, height: 28};
+    const simple = getIslandGeometry(panel, panel, true, 'activity-simple');
+    const percent = getIslandGeometry(panel, panel, true, 'activity');
+    assert.equal(simple.height, 86);
+    assert.equal(percent.height, 124);
+    assert.equal(simple.x + simple.width / 2, percent.x + percent.width / 2);
+});

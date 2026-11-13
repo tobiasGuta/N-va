@@ -4,7 +4,7 @@
 
 Nova is an early-stage GNOME Shell extension with a compact clock and calendar by default. When an MPRIS player actively plays audio/video, it switches to a music island. Hover to expand; use the discreet pin icon to keep it open.
 
-## Features in v0.5.3
+## Features in v0.5.4
 
 - Compact, centered black pill fitted to the GNOME panel height, with smooth expand/collapse and content fade-in.
 - Default compact clock with local time and weekday; expanded month-view calendar with navigation.
@@ -27,7 +27,7 @@ Nova is an early-stage GNOME Shell extension with a compact clock and calendar b
 - Restores the original GNOME center clock when disabled.
 - Respects GNOME 51 reduced-motion preference; no AI or subprocesses. Optional HTTPS requests occur only for remote cover art during playback.
 
-**Status:** Experimental v0.5.3 release targeting GNOME Shell 49–51. The new activities and preferences use GNOME APIs that may vary with Fedora/desktop extensions and need live Fedora testing. The calendar is local-only (no appointments). Nova can replace ordinary banners when the optional Nova-only setting is enabled; GNOME's critical alerts remain native.
+**Status:** Experimental v0.5.4 release targeting GNOME Shell 49–51. The new activities and preferences use GNOME APIs that may vary with Fedora/desktop extensions and need live Fedora testing. The calendar is local-only (no appointments). Nova can replace ordinary banners when the optional Nova-only setting is enabled; GNOME's critical alerts remain native.
 
 ## Install on Fedora GNOME
 
@@ -106,7 +106,7 @@ Adjust the compact/expanded widths, accent color (hex `#RRGGBB`), animation spee
 - **Volume:** Mirrors output-volume changes from compatible GNOME Quick Settings stream objects.
 - **Brightness:** Uses GNOME's active Quick Settings slider as the authoritative source to avoid incorrect jumps between readings. Falls back to Mutter's `org.gnome.Mutter.DisplayConfig.Backlight` property only when the slider is unavailable. Some hardware may not expose either.
 - **Screen recording:** Tracks GNOME Shell's built-in screencast status, not OBS, browser sharing, or other third-party recorders.
-- **Downloads:** Nova uses your configured XDG Downloads directory (fallback `~/Downloads`) and an asynchronous Gio scan every ~2.4 seconds, plus file-monitor signals for faster changes. It recognizes Firefox `.part` and Chromium `.crdownload` transfers, and also detects files written directly to their final name. It shows `Downloading` for temporary files, `Download complete` after the associated final file is present, or `Saving to Downloads` / `Saved to Downloads` for files without a temporary filename once their size stabilizes. The latter is **best-effort** and can include ordinary file copies. No browser-wide exact percentage is available through folder monitoring. Files saved outside the configured Downloads folder aren't tracked.
+- **Downloads:** Nova uses your configured XDG Downloads directory (fallback `~/Downloads`) and listens for Gio file-monitor events, with asynchronous folder scans every ~2.4 seconds as a fallback. Rename completions are checked immediately, and direct-to-final files receive a follow-up scan after ~700 ms rather than waiting for the next fallback poll. It recognizes Firefox `.part` and Chromium `.crdownload` transfers, and also detects files written directly to their final name. It shows `Downloading` for temporary files, `Download complete` after the associated final file is present, or `Saving to Downloads` / `Saved to Downloads` for files without a temporary filename once their size stabilizes. The latter is **best-effort** and can include ordinary file copies. Very fast image downloads now show only a compact Saved notification after a brief settling interval. Download cards without an actual percentage no longer display a misleading progress bar. No browser-wide exact percentage is available through folder monitoring. Files saved outside the configured Downloads folder aren't tracked.
 
 All preview/monitor timers and listeners are cleaned up when Nova is disabled.
 
