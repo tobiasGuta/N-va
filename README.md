@@ -1,8 +1,28 @@
 # Nova
 
-**A tiny Dynamic Island for GNOME. No AI, no background daemon, no Electron.**
+**A lightweight, Apple-inspired Dynamic Island for GNOME Shell.** Smooth animations, music controls, live desktop activities, a clock and calendar — **no AI, Electron, or background daemon**.
 
-Nova is an early-stage GNOME Shell extension with a compact clock and calendar by default. When an MPRIS player actively plays audio/video, it switches to a music island. Hover to expand; use the discreet pin icon to keep it open.
+[![Nova checks](https://github.com/tobiasGuta/N-va/actions/workflows/ci.yml/badge.svg)](https://github.com/tobiasGuta/N-va/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/badge/release-v0.5.4-blue)](https://github.com/tobiasGuta/N-va/releases/tag/v0.5.4)
+
+**[Get Nova v0.5.4](https://github.com/tobiasGuta/N-va/releases/tag/v0.5.4)** · **[Installation](#install-on-fedora-gnome)** · **[Preferences](#preferences)** · **[Report a bug](https://github.com/tobiasGuta/N-va/issues/new/choose)**
+
+### Screenshots
+
+<table>
+<tr>
+<td width="53%" align="center">
+<img src="assets/screenshots/desktop.webp" alt="Nova compact music island floating in a transparent GNOME panel" width="720"/>
+<sub>Compact island with floating top bar</sub>
+</td>
+<td width="47%" align="center">
+<img src="assets/screenshots/music.webp" alt="Nova expanded music controls with artwork and playback buttons" width="450"/>
+<sub>Expanded MPRIS music card</sub>
+</td>
+</tr>
+</table>
+
+<sub>Real Fedora screenshots provided during development and cropped to highlight Nova. Some controls in the captures have since been refined.</sub>
 
 ## Features in v0.5.4
 
@@ -27,7 +47,7 @@ Nova is an early-stage GNOME Shell extension with a compact clock and calendar b
 - Restores the original GNOME center clock when disabled.
 - Respects GNOME 51 reduced-motion preference; no AI or subprocesses. Optional HTTPS requests occur only for remote cover art during playback.
 
-**Status:** Experimental v0.5.4 release targeting GNOME Shell 49–51. The new activities and preferences use GNOME APIs that may vary with Fedora/desktop extensions and need live Fedora testing. The calendar is local-only (no appointments). Nova can replace ordinary banners when the optional Nova-only setting is enabled; GNOME's critical alerts remain native.
+**Status:** v0.5.4 is our first Fedora-tested stable milestone, targeting GNOME Shell 49–51. Not all GNOME versions and themes have been independently verified; live activities use Shell APIs that may vary between setups. The calendar is local-only (no appointments). Nova can replace ordinary banners when the optional Nova-only setting is enabled; GNOME's critical alerts remain native.
 
 ## Install on Fedora GNOME
 
@@ -38,7 +58,7 @@ Nova is an early-stage GNOME Shell extension with a compact clock and calendar b
    gnome-shell --version
    ```
 
-2. Download and install locally:
+2. For the tested source installation, clone and install locally (or get the ZIP from the [v0.5.4 release](https://github.com/tobiasGuta/N-va/releases/tag/v0.5.4)):
 
    ```bash
    git clone https://github.com/tobiasGuta/N-va.git
@@ -171,4 +191,4 @@ Bug reports and PRs are welcome. Please include Fedora and GNOME Shell versions 
 
 ## License
 
-License selection is pending the repository owner's decision; do not assume third-party code is included. The implementation here was written from scratch.
+**License selection is still pending.** Public source code does not automatically grant permission to redistribute or create derivative works. Please do not assume Nova has an approved open-source license yet. This is tracked as a release follow-up; the implementation was written from scratch.
