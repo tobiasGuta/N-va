@@ -115,7 +115,8 @@ test('the optional developer service starts and stops from settings', () => {
 });
 
 test('music animation sleeps when Nova is hidden and cleans up on disable', () => {
-    assert.match(extension, /notify::visible', \(\) => this\._syncWave\(\)/);
+    assert.match(extension, /notify::visible', \(\) => \{/);
+    assert.match(extension, /if \(!this\._island\.visible\)\s+this\._notificationQueue\.clear\(\)/);
     assert.match(extension, /this\._island\?\.visible !== false/);
     assert.match(extension, /this\._stopWave\(\)/);
 });
