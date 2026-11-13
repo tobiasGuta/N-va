@@ -3,9 +3,9 @@
 **A lightweight, Apple-inspired Dynamic Island for GNOME Shell.** Smooth animations, music controls, live desktop activities, a clock and calendar — **no AI, Electron, or background daemon**.
 
 [![Nova checks](https://github.com/tobiasGuta/N-va/actions/workflows/ci.yml/badge.svg)](https://github.com/tobiasGuta/N-va/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/badge/release-v0.5.4-blue)](https://github.com/tobiasGuta/N-va/releases/tag/v0.5.4)
+[![Release](https://img.shields.io/badge/release-v0.6.0-blue)](https://github.com/tobiasGuta/N-va/releases/tag/v0.6.0)
 
-**[Get Nova v0.5.4](https://github.com/tobiasGuta/N-va/releases/tag/v0.5.4)** · **[Installation](#install-on-fedora-gnome)** · **[Preferences](#preferences)** · **[Report a bug](https://github.com/tobiasGuta/N-va/issues/new/choose)**
+**[Get Nova v0.6.0](https://github.com/tobiasGuta/N-va/releases/tag/v0.6.0)** · **[Installation](#install-on-fedora-gnome)** · **[Preferences](#preferences)** · **[Report a bug](https://github.com/tobiasGuta/N-va/issues/new/choose)**
 
 ### Screenshots
 
@@ -60,38 +60,26 @@
 
 <sub>Real Fedora screenshots provided during development and cropped to highlight Nova. Some controls in the captures have since been refined.</sub>
 
-## Development preview: v0.6.0-dev
+## What's new in v0.6.0
 
-The released **v0.5.4** build remains the recommended stable Fedora version.
-Work on the next generation is happening on
-[`feat/nova-next-foundations`](https://github.com/tobiasGuta/N-va/tree/feat/nova-next-foundations).
-The development version includes theme presets (Custom, Mint, Ocean, Violet,
-Sunset), an optional keyboard toggle, reduced idle UI work, and an **opt-in
-local D-Bus developer activity API**. These additions have automated tests
-but have **not yet been visually/runtime-tested in Fedora GNOME**.
+This release builds on Fedora-tested v0.5.4, adding five capsule themes
+(Custom, Mint, Ocean, Violet, Sunset), an optional keyboard shortcut,
+more efficient music and activity rendering, a music-visualizer toggle,
+and a **disabled-by-default local D-Bus API** for developer activity cards.
 
-To test without altering your working tree on `main`, create a second local
-worktree and use it only if you're comfortable experimenting:
+The changes have passed automated JavaScript and package checks and
+the maintainer's Fedora desktop tests for **themes, shortcut, developer API,
+music, downloads, notifications, and enable/disable behavior**.
+Tests have not yet established performance metrics or runtime
+compatibility on every GNOME 49–51 setup.
 
-```bash
-cd ~/N-va
-git fetch origin
-git worktree add ../N-va-next origin/feat/nova-next-foundations
-cd ../N-va-next
-bash install.sh
-```
-
-Then log out and back in on Wayland. The development extension uses the same
-UUID as stable Nova, so **installing it replaces the installed build** (but
-does not change the stable GitHub release or your `main` working tree).
-Reinstall from `~/N-va` to roll back.
-
-See the [development roadmap](docs/ROADMAP.md),
-[developer API](docs/developer-api.md),
+See the [release notes](docs/releases/v0.6.0.md),
+[roadmap](docs/ROADMAP.md),
+[developer activity API](docs/developer-api.md),
 [architecture](docs/ARCHITECTURE.md), and
 [manual test plan](docs/TESTING.md).
 
-## Stable features in v0.5.4
+## Core features
 
 - Compact, centered black pill fitted to the GNOME panel height, with smooth expand/collapse and content fade-in.
 - Default compact clock with local time and weekday; expanded month-view calendar with navigation.
@@ -114,7 +102,7 @@ See the [development roadmap](docs/ROADMAP.md),
 - Restores the original GNOME center clock when disabled.
 - Respects GNOME 51 reduced-motion preference; no AI or subprocesses. Optional HTTPS requests occur only for remote cover art during playback.
 
-**Status:** v0.5.4 is our first Fedora-tested stable milestone, targeting GNOME Shell 49–51. Not all GNOME versions and themes have been independently verified; live activities use Shell APIs that may vary between setups. The calendar is local-only (no appointments). Nova can replace ordinary banners when the optional Nova-only setting is enabled; GNOME's critical alerts remain native.
+**Status:** v0.6.0 is the latest Fedora-tested stable release, targeting GNOME Shell 49–51. Not all GNOME versions and themes have been independently verified; live activities use Shell APIs that may vary between setups. The calendar is local-only (no appointments). Nova can replace ordinary banners when the optional Nova-only setting is enabled; GNOME's critical alerts remain native.
 
 ## Install on Fedora GNOME
 
@@ -125,7 +113,7 @@ See the [development roadmap](docs/ROADMAP.md),
    gnome-shell --version
    ```
 
-2. For the tested source installation, clone and install locally (or get the ZIP from the [v0.5.4 release](https://github.com/tobiasGuta/N-va/releases/tag/v0.5.4)):
+2. For the tested source installation, clone and install locally (or get the ZIP from the [v0.6.0 release](https://github.com/tobiasGuta/N-va/releases/tag/v0.6.0)):
 
    ```bash
    git clone https://github.com/tobiasGuta/N-va.git
@@ -177,7 +165,7 @@ playerctl metadata
 
 ## Preferences
 
-Development preview: appearance now includes theme presets (Custom, Mint,
+New in v0.6.0: appearance includes theme presets (Custom, Mint,
 Ocean, Violet, Sunset), an optional shortcut (off by default), and a toggle
 for animated music bars. In Live activities, opt in to the local developer API
 only if you want same-user apps to display short status messages.

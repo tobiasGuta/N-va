@@ -22,7 +22,7 @@ test('all runtime JS modules are included by packaging glob', () => {
 });
 
 test('dev metadata is deliberately distinct from latest stable release', () => {
-    assert.equal(JSON.parse(read('package.json')).version, '0.6.0-dev');
+    assert.equal(JSON.parse(read('package.json')).version, '0.6.0');
     assert.equal(JSON.parse(read('metadata.json')).uuid, 'nova@tobiasguta.github.io');
     assert.ok(read('README.md').includes('v0.5.4'));
 });

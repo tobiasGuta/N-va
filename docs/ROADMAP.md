@@ -5,23 +5,23 @@ behavior blindly. This is a living engineering plan, not a promise of dates.
 
 | Pillar | Available now | Next validation/build |
 |---|---|---|
-| Visual polish | Floating capsule, motion, artwork, theme presets (preview) | Motion/accessibility review at multiple scaling factors; keyboard navigation |
+| Visual polish | Floating capsule, motion, artwork, theme presets (Fedora-tested) | Motion/accessibility review at multiple scaling factors; keyboard navigation |
 | Stability | Cleanup on disable, async I/O, regression tests | Repeated enable/disable stress tests; memory/CPU baseline across GNOME 49–51 |
-| Linux integrations | MPRIS, GNOME notifications/OSD, XDG Downloads, native recorder, opt-in local D-Bus preview | PipeWire-native recording status and browser download API (requires design + hardware tests) |
-| Customization | Color, widths, timings, per-activity toggles, preset themes/shortcut (preview) | User-configurable activities and layout presets |
+| Linux integrations | MPRIS, GNOME notifications/OSD, XDG Downloads, native recorder, opt-in local D-Bus API | PipeWire-native recording status and browser download API (requires design + hardware tests) |
+| Customization | Color, widths, timings, per-activity toggles, preset themes/shortcut (Fedora-tested) | User-configurable activities and layout presets |
 | Community | Release notes, issue/PR templates, docs, CI | License decision, contributor onboarding, GNOME Extensions review |
 
-## v0.6.0-dev — development scope
+## v0.6.0 — released
 
 - [x] Add compact theme presets without overriding saved custom colors
 - [x] Add an optional keyboard shortcut with cleanup on disable
 - [x] Reduce repeated actor creation for static activity previews
 - [x] Add an opt-in, bounded D-Bus activity interface for local tools
 - [x] Add regression and package checks
-- [ ] Verify features in real Fedora GNOME session (49/50/51 as available)
+- [x] Verify themes, shortcut, developer API and existing live activities in a real Fedora GNOME session (other GNOME versions remain unverified)
 - [ ] Record a repeatable idle CPU/memory baseline
 - [ ] Audit theme, keyboard focus, and reduced-motion behavior
-- [ ] Merge only after visual and interaction review
+- [x] Owner confirmed theme, shortcut, developer API, music, downloads, notification and enable/disable tests
 
 ## Later exploration
 

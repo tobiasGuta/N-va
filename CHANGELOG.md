@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased — v0.6.0-dev (development branch only)
+## v0.6.0 — Customization and developer activities (Fedora-tested)
 
 - Preset capsule themes, preserving existing custom accent colors
 - Optional, conflict-avoiding keyboard shortcut to open/close Nova
@@ -9,7 +9,7 @@
 - Extended GNOME lifecycle and packaging checks
 - Architecture, performance, testing and contribution documentation
 
-**Not a stable release:** these changes still need visual and GNOME runtime testing.
+**Validation:** Automated tests, schema/package checks, and hands-on Fedora verification of themes, keyboard shortcuts, developer API, music, downloads, notifications, and enable/disable. Other GNOME versions and performance characteristics remain to be measured.
 
 ## v0.5.4 — First stable milestone (Fedora-tested)
 

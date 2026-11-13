@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 UUID="nova@tobiasguta.github.io"
-VERSION="0.6.0-dev"
+VERSION="0.6.0"
 OUT="${ROOT}/dist/Nova-v${VERSION}-GNOME.zip"
 
 for command in zip glib-compile-schemas; do

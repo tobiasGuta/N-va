@@ -16,12 +16,12 @@ jobs:
         run: npm run check
       - name: Check GSettings schema
         run: glib-compile-schemas --strict --dry-run schemas
-      - name: Package preview extension and verify bundled modules
+      - name: Package release extension and verify bundled modules
         run: |
           bash scripts/package.sh
-          unzip -t dist/Nova-v0.6.0-dev-GNOME.zip
-          unzip -Z1 dist/Nova-v0.6.0-dev-GNOME.zip | grep -Fx lib/live-activity.js
-          unzip -Z1 dist/Nova-v0.6.0-dev-GNOME.zip | grep -Fx lib/themes.js
-          unzip -Z1 dist/Nova-v0.6.0-dev-GNOME.zip | grep -Fx schemas/gschemas.compiled
-          test "$(unzip -p dist/Nova-v0.6.0-dev-GNOME.zip metadata.json |
+          unzip -t dist/Nova-v0.6.0-GNOME.zip
+          unzip -Z1 dist/Nova-v0.6.0-GNOME.zip | grep -Fx lib/live-activity.js
+          unzip -Z1 dist/Nova-v0.6.0-GNOME.zip | grep -Fx lib/themes.js
+          unzip -Z1 dist/Nova-v0.6.0-GNOME.zip | grep -Fx schemas/gschemas.compiled
+          test "$(unzip -p dist/Nova-v0.6.0-GNOME.zip metadata.json |
             python3 -c 'import json,sys; print(json.load(sys.stdin)["uuid"])')" = "nova@tobiasguta.github.io"
