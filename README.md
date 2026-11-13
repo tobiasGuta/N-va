@@ -23,7 +23,7 @@
     </td>
     <td width="33%" align="center">
       <img
-        src="assets/screenshots/music.webp"
+        src="assets/screenshots/music1.webp"
         alt="Nova expanded music controls with artwork and playback buttons"
         width="100%"
       />
