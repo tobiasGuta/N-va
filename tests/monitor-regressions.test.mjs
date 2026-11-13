@@ -30,3 +30,17 @@ test('regular GNOME notifications remain in history when Nova handles banner', (
     assert.match(monitor, /MessageTray\.Urgency\.CRITICAL/);
     assert.match(monitor, /notification\.acknowledged = true/);
 });
+
+test('direct rename completion is confirmed without waiting for poll', () => {
+    const source = readFileSync(new URL('../lib/downloads.js', import.meta.url), 'utf8');
+    assert.match(source, /FileMonitorEvent\.RENAMED/);
+    assert.match(source, /this\._confirmRename\(otherFile\)/);
+    assert.match(source, /tracker\.confirmCompleted\(/);
+});
+
+test('a short settling scan is scheduled without blocking GNOME Shell', () => {
+    const source = readFileSync(new URL('../lib/downloads.js', import.meta.url), 'utf8');
+    assert.match(source, /SETTLE_RECHECK_MS = 700/);
+    assert.match(source, /this\._tracker\.hasPendingFinals\(\)/);
+    assert.match(source, /this\._queueSettleScan\(\)/);
+});
