@@ -60,7 +60,38 @@
 
 <sub>Real Fedora screenshots provided during development and cropped to highlight Nova. Some controls in the captures have since been refined.</sub>
 
-## Features in v0.5.4
+## Development preview: v0.6.0-dev
+
+The released **v0.5.4** build remains the recommended stable Fedora version.
+Work on the next generation is happening on
+[`feat/nova-next-foundations`](https://github.com/tobiasGuta/N-va/tree/feat/nova-next-foundations).
+The development version includes theme presets (Custom, Mint, Ocean, Violet,
+Sunset), an optional keyboard toggle, reduced idle UI work, and an **opt-in
+local D-Bus developer activity API**. These additions have automated tests
+but have **not yet been visually/runtime-tested in Fedora GNOME**.
+
+To test without altering your working tree on `main`, create a second local
+worktree and use it only if you're comfortable experimenting:
+
+```bash
+cd ~/N-va
+git fetch origin
+git worktree add ../N-va-next origin/feat/nova-next-foundations
+cd ../N-va-next
+bash install.sh
+```
+
+Then log out and back in on Wayland. The development extension uses the same
+UUID as stable Nova, so **installing it replaces the installed build** (but
+does not change the stable GitHub release or your `main` working tree).
+Reinstall from `~/N-va` to roll back.
+
+See the [development roadmap](docs/ROADMAP.md),
+[developer API](docs/developer-api.md),
+[architecture](docs/ARCHITECTURE.md), and
+[manual test plan](docs/TESTING.md).
+
+## Stable features in v0.5.4
 
 - Compact, centered black pill fitted to the GNOME panel height, with smooth expand/collapse and content fade-in.
 - Default compact clock with local time and weekday; expanded month-view calendar with navigation.
@@ -145,6 +176,11 @@ playerctl metadata
 `playerctl` is **not** a Nova runtime dependency.
 
 ## Preferences
+
+Development preview: appearance now includes theme presets (Custom, Mint,
+Ocean, Violet, Sunset), an optional shortcut (off by default), and a toggle
+for animated music bars. In Live activities, opt in to the local developer API
+only if you want same-user apps to display short status messages.
 
 Open **Extensions → Nova → Preferences**, click the small gear button inside Nova’s expanded calendar or music player, or run:
 

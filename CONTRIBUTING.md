@@ -1,16 +1,49 @@
 # Contributing to Nova
 
-Thanks for helping make Nova better. This extension executes inside GNOME Shell, so changes to signals, timers or UI layout need careful cleanup and testing.
+Thanks for improving Nova. It runs inside GNOME Shell, so contributors should
+prioritize responsiveness, reliable cleanup, user consent, and compatibility.
 
-## Before a pull request
+**License status:** The repository owner has not selected an open-source
+license yet. Public GitHub access alone does not grant permission to
+redistribute or relicense the project. Please discuss any code contributions
+with the maintainer until [licensing is settled](https://github.com/tobiasGuta/N-va/issues/1).
 
-1. Create a branch from `main`, keep each PR focused, and explain the user-visible behavior.
-2. Run `npm run check` (Node.js 20 or newer). The CI checks JavaScript syntax and unit tests, and also validates the GSettings schema.
-3. For UI changes, test in a nested GNOME Shell session if possible, then on a Fedora/GNOME desktop after logging out and back in.
-4. Make sure disabling Nova restores the original top panel and clock and disconnects listeners/timers.
-5. Include Fedora version, GNOME Shell version, and screenshots when filing UI issues.
+## Development workflow
 
-Useful diagnostics:
+1. Open a focused issue or PR with a clear motivation. Look at
+   [the roadmap](docs/ROADMAP.md) before proposing major additions.
+2. Branch from the latest `main`, or from `feat/nova-next-foundations` for
+   changes to the unreleased v0.6 work.
+3. Run `npm run check` with Node.js 20+, and
+   `glib-compile-schemas --strict --dry-run schemas`.
+4. Build a preview ZIP with `bash scripts/package.sh`. The CI validates the
+   package, but only live GNOME testing can confirm behavior.
+5. For UI changes attach a compact and expanded screenshot. Test both
+   light/dark backgrounds, reduced motion, and hover/pin behavior.
+6. Confirm disabling Nova disconnects signals and timers, cancels asynchronous
+   work, removes its optional shortcuts and D-Bus name, and restores GNOME's
+   native clock, panel styling, and OSD handling.
+7. Avoid modifying private GNOME Shell methods unless unavoidable, guarded,
+   reversible, and covered by runtime tests.
+
+## Testing on Fedora
+
+GNOME 49 and later can use a nested development session when the
+`mutter-devkit` package is installed:
+
+```bash
+sudo dnf install mutter-devkit
+dbus-run-session gnome-shell --devkit --wayland
+```
+
+For ordinary Wayland sessions, log out and back in after modifying an
+extension, then enable:
+
+```bash
+gnome-extensions enable nova@tobiasguta.github.io
+```
+
+Diagnostics:
 
 ```bash
 gnome-shell --version
@@ -18,10 +51,12 @@ gnome-extensions info nova@tobiasguta.github.io
 journalctl --user -b /usr/bin/gnome-shell --no-pager | grep -i nova
 ```
 
-## Limitations
+See [manual test scenarios](docs/TESTING.md) and
+[architecture/resource lifecycle](docs/ARCHITECTURE.md).
 
-GNOME 49–51 are declared compatibility targets. Private GNOME APIs may vary, and other extensions can affect the top panel. Please avoid blocking I/O in Shell.
+## Compatibility and scope
 
-## License status
-
-The repository owner has **not yet selected a software license**. Please discuss licensing before submitting code intended for redistribution; the repository being public is not itself a grant of redistribution rights.
+GNOME 49–51 are declared targets, but private APIs and extensions such as
+Blur my Shell can alter panel behavior. Please don't make untested compatibility
+claims or introduce blocking file/network I/O inside Shell. The local activity
+API is opt-in and must never expose arbitrary file access or privileged actions.
