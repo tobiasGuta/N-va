@@ -25,6 +25,8 @@ export default class NovaPreferences extends ExtensionPreferences {
         const toggles = [
             [appearance, 'floating-panel', 'Transparent top panel',
                 'Keep system icons visible while removing the panel background'],
+            [appearance, 'show-privacy-indicators', 'Privacy indicators',
+                'Show camera, microphone, location, and screen sharing activity reported by GNOME'],
         ];
 
         const behavior = new Adw.PreferencesGroup({

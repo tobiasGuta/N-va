@@ -14,6 +14,7 @@ import {waveFrame} from './lib/waveform.js';
 import {getIslandGeometry} from './lib/geometry.js';
 import {resolveTheme, validShortcut} from './lib/themes.js';
 import {ActivityMonitor} from './lib/activity-monitor.js';
+import {PrivacyMonitor} from './lib/privacy-monitor.js';
 import {LiveActivityService} from './lib/live-activity.js';
 import {NotificationQueue} from './lib/notification-preview.js';
 import {osdPreview} from './lib/osd-utils.js';
@@ -114,6 +115,8 @@ export default class NovaExtension extends Extension {
         this._presentedMode = 'clock';
         this._panelCustomized = false;
         this._activities = null;
+        this._privacyMonitor = null;
+        this._privacySummary = '';
         this._osdHooks = [];
         this._osdHookEnabled = false;
         this._lastPreview = null;
@@ -171,6 +174,7 @@ export default class NovaExtension extends Extension {
             recording => this._recordingChanged(recording)
         );
         this._activities.start();
+        this._syncPrivacyMonitor();
         this._bindShortcut();
         this._syncDeveloperApi();
         this._syncNativeOsd();
@@ -216,6 +220,7 @@ export default class NovaExtension extends Extension {
         this._compactText = label('NOVA', 'nova-compact-title');
         this._compactText.style = 'font-size: 11px; font-weight: 700; color: #f8fafc;';
         this._compactText.x_expand = true;
+        this._compactText.clutter_text.ellipsize = Pango.EllipsizeMode.END;
         compactContent.add_child(this._compactText);
         this._statusDot = new St.Bin({
             style_class: 'nova-status-dot',
@@ -246,6 +251,26 @@ export default class NovaExtension extends Extension {
             this._waveBars.push(bar);
         }
         compactContent.add_child(this._wave);
+        this._privacyIcons = new St.BoxLayout({
+            orientation: Clutter.Orientation.HORIZONTAL,
+            style: 'spacing: 4px;',
+            y_align: Clutter.ActorAlign.CENTER,
+            visible: false,
+        });
+        this._privacyDot = new St.Bin({
+            width: 7,
+            height: 7,
+            y_align: Clutter.ActorAlign.CENTER,
+            visible: false,
+        });
+        this._privacyLocation = icon('location-services-active-symbolic',
+            'nova-privacy-location', 11, '#81c4ff');
+        this._privacySharing = icon('screen-shared-symbolic',
+            'nova-privacy-sharing', 11, '#f5a5dc');
+        this._privacyIcons.add_child(this._privacyDot);
+        this._privacyIcons.add_child(this._privacyLocation);
+        this._privacyIcons.add_child(this._privacySharing);
+        compactContent.add_child(this._privacyIcons);
 
         this._compactView = new St.Button({
             style_class: 'nova-compact',
@@ -387,6 +412,14 @@ export default class NovaExtension extends Extension {
         this._expandedView.add_child(this._calendarView);
         this._activityView = this._buildActivityView();
         this._expandedView.add_child(this._activityView);
+        this._privacyLabel = label('', 'nova-privacy-label');
+        this._privacyLabel.style = 'color: #e5e7eb; font-size: 10px;';
+        this._privacyLabel.x_expand = true;
+        this._privacyLabel.x_align = Clutter.ActorAlign.END;
+        this._privacyLabel.clutter_text.line_wrap = true;
+        this._privacyLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END;
+        this._privacyLabel.visible = false;
+        this._expandedView.add_child(this._privacyLabel);
 
         this._island.add_child(this._compactView);
         this._island.add_child(this._expandedView);
@@ -666,6 +699,8 @@ export default class NovaExtension extends Extension {
             this._syncPanelStyle();
         else if (key === 'replace-native-osd')
             this._syncNativeOsd();
+        else if (key === 'show-privacy-indicators')
+            this._syncPrivacyMonitor();
         else if (key === 'compact-width' || key === 'expanded-width')
             this._position(false);
         else if (key === 'accent-color' || key === 'theme-preset')
@@ -823,9 +858,7 @@ export default class NovaExtension extends Extension {
             if (changed)
                 this._renderArtwork(this._lastGicon);
         }
-        this._compactView.set_accessible_name(activity
-            ? 'Open Nova live activity' : playing
-                ? 'Open Nova music controls' : 'Open Nova calendar');
+        this._updateCompactAccessibleName(activity);
 
         if (changed) {
             if (this._expanded) {
@@ -851,6 +884,53 @@ export default class NovaExtension extends Extension {
                 });
             }
         }
+    }
+
+    _syncPrivacyMonitor() {
+        if (!this._settings.get_boolean('show-privacy-indicators')) {
+            this._privacyMonitor?.destroy();
+            this._privacyMonitor = null;
+            this._showPrivacyState({});
+        } else if (!this._privacyMonitor) {
+            this._privacyMonitor = new PrivacyMonitor(Main.panel.statusArea,
+                Main.sessionMode, state => this._showPrivacyState(state));
+            this._privacyMonitor.start();
+        }
+    }
+
+    _showPrivacyState({camera, microphone, location, screenSharing}) {
+        const statuses = [];
+        if (camera && microphone)
+            statuses.push('Camera and mic in use');
+        else if (camera)
+            statuses.push('Camera in use');
+        else if (microphone)
+            statuses.push('Microphone in use');
+        if (location)
+            statuses.push('Location active');
+        if (screenSharing)
+            statuses.push('Screen sharing');
+
+        const previousSummary = this._privacySummary;
+        this._privacySummary = statuses.join(' · ');
+        this._privacyLabel.text = this._privacySummary;
+        this._privacyLabel.visible = statuses.length > 0;
+        this._privacyIcons.visible = this._privacyLabel.visible;
+        this._privacyDot.visible = Boolean(camera || microphone);
+        const color = camera ? '#63e68c' : '#ffad55';
+        this._privacyDot.style = `background-color: ${color}; border-radius: 4px;`;
+        this._privacyLocation.visible = Boolean(location);
+        this._privacySharing.visible = Boolean(screenSharing);
+        this._updateCompactAccessibleName(this._currentActivity());
+        if (this._expanded && previousSummary !== this._privacySummary)
+            this._position(false);
+    }
+
+    _updateCompactAccessibleName(activity) {
+        const action = activity ? 'Open Nova live activity' : this._displayMode === 'music'
+            ? 'Open Nova music controls' : 'Open Nova calendar';
+        this._compactView.set_accessible_name(this._privacySummary
+            ? `${action}. ${this._privacySummary}` : action);
     }
 
     _queueNotification(activity) {
@@ -1464,12 +1544,18 @@ export default class NovaExtension extends Extension {
                 expandedWidth: this._settings?.get_int('expanded-width') ?? 328,
             }
         );
+        let privacyHeight = 0;
+        if (this._expanded && this._privacyLabel.visible) {
+            // Match the expanded view's horizontal padding and row spacing.
+            const [, labelHeight] = this._privacyLabel.get_preferred_height(Math.max(1, width - 28));
+            privacyHeight = Math.ceil(labelHeight) + 11;
+        }
 
         this._island.remove_all_transitions();
 
         if (!animate || this._reduceMotion()) {
             this._island.set_position(x, y);
-            this._island.set_size(width, height);
+            this._island.set_size(width, height + privacyHeight);
             return;
         }
 
@@ -1477,7 +1563,7 @@ export default class NovaExtension extends Extension {
             x,
             y,
             width,
-            height,
+            height: height + privacyHeight,
             duration: this._animationTime(),
             mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
         });
@@ -1524,6 +1610,8 @@ export default class NovaExtension extends Extension {
         this._restoreNativeOsd();
         this._activities?.destroy();
         this._activities = null;
+        this._privacyMonitor?.destroy();
+        this._privacyMonitor = null;
         this._cancelCollapse();
         this._cancelReveal();
         this._stopWave();
@@ -1557,6 +1645,11 @@ export default class NovaExtension extends Extension {
         }
 
         this._compactView = null;
+        this._privacyIcons = null;
+        this._privacyDot = null;
+        this._privacyLocation = null;
+        this._privacySharing = null;
+        this._privacyLabel = null;
         this._expandedView = null;
         this._musicView = null;
         this._calendarView = null;
