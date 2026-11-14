@@ -15,6 +15,9 @@ theme resolution; these are covered by Node.js tests.
   memory and cancel on disable.
 - `lib/activity-monitor.js`, `lib/downloads.js`: optional GNOME status
   sources and asynchronous XDG Downloads scans.
+- `lib/privacy-monitor.js`: subscribes to existing Shell privacy indicators
+  and the microphone mute state. Subscriptions are removed when the feature
+  or extension is disabled.
 - `lib/themes.js`: pure preset palettes and approved keyboard combinations.
 - `lib/live-activity.js`, `lib/activity-protocol.js`: optional local
   session-bus integration and strict payload validation.

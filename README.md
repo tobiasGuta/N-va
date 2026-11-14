@@ -201,6 +201,25 @@ gnome-extensions prefs nova@tobiasguta.github.io
 
 Adjust the compact/expanded widths, accent color (hex `#RRGGBB`), animation speed, floating top bar, and individual activity features. The installer now compiles an extension-local GSettings schema. If you install manually, include `prefs.js` and the `schemas/` directory.
 
+## Privacy indicators
+
+The current source on `main` shows privacy activity at the right edge of the
+compact capsule. Expand Nova to read which activities are active.
+
+| Indicator | Meaning |
+| --- | --- |
+| Orange dot | Microphone in use. System mute clears the microphone status. |
+| Green dot | Camera in use. The expanded summary also mentions the microphone when both are active. |
+| Blue location arrow | GNOME Location Services are active. |
+| Pink screen-sharing icon | GNOME reports screen sharing. |
+
+The indicators are on by default. Turn them off in **Nova Preferences →
+Appearance → Privacy indicators**. Nova reads the activity state GNOME Shell
+already reports and leaves the native indicators visible. Camera access
+outside GNOME's PipeWire monitor and location requests outside GNOME Location
+Services can go undetected. The v0.7.0 release ZIP predates this feature.
+See the [Fedora test steps](docs/TESTING.md#privacy-indicators).
+
 ## Live activity coverage
 
 - **Timer:** Start a 5-, 15-, or 25-minute countdown in the expanded calendar. It remains visible until stopped or finished.
@@ -208,7 +227,7 @@ Adjust the compact/expanded widths, accent color (hex `#RRGGBB`), animation spee
 - **Volume / brightness OSD:** GNOME normally shows its own OSD as well as Nova. The **Replace native volume/brightness OSD** preference now defaults to on for new installs. You can turn it off to keep GNOME's overlays. When enabled, Nova reads the volume/brightness percentage from the same GNOME OSD event, renders it directly, and suppresses only that native popup. Unsupported GNOME overlays remain intact. Existing saved settings may override the new default; check the preferences switch if two popups remain. Disabling Nova restores the original GNOME methods.
 - **Volume:** Mirrors output-volume changes from compatible GNOME Quick Settings stream objects.
 - **Brightness:** Uses GNOME's active Quick Settings slider as the authoritative source to avoid incorrect jumps between readings. Falls back to Mutter's `org.gnome.Mutter.DisplayConfig.Backlight` property only when the slider is unavailable. Some hardware may not expose either.
-- **Screen recording:** Tracks GNOME Shell's built-in screencast status, not OBS, browser sharing, or other third-party recorders.
+- **Screen recording:** The recording timer tracks GNOME Shell's built-in screencast. The separate privacy icon follows GNOME's screen-sharing status.
 - **Downloads:** Nova uses your configured XDG Downloads directory (fallback `~/Downloads`) and listens for Gio file-monitor events, with asynchronous folder scans every ~2.4 seconds as a fallback. Rename completions are checked immediately, and direct-to-final files receive a follow-up scan after ~700 ms rather than waiting for the next fallback poll. It recognizes Firefox `.part` and Chromium `.crdownload` transfers, and also detects files written directly to their final name. It shows `Downloading` for temporary files, `Download complete` after the associated final file is present, or `Saving to Downloads` / `Saved to Downloads` for files without a temporary filename once their size stabilizes. The latter is **best-effort** and can include ordinary file copies. Very fast image downloads now show only a compact Saved notification after a brief settling interval. Download cards without an actual percentage no longer display a misleading progress bar. No browser-wide exact percentage is available through folder monitoring. Files saved outside the configured Downloads folder aren't tracked.
 
 All preview/monitor timers and listeners are cleaned up when Nova is disabled.

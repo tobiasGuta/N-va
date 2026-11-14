@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Show camera, microphone, location, and screen-sharing activity reported by
+  GNOME in the capsule, with a text summary when expanded and an Appearance
+  preference to disable the indicators.
+- Verified microphone, camera, and location on Fedora 45 with GNOME Shell 51.1.
+
 ## v0.7.0 — Rich notification previews (Fedora-tested)
 
 - Display the notification's title, message body, and source app separately

@@ -35,6 +35,32 @@ release, test with the current Fedora/GNOME version and record the results.
 - [ ] Disable Nova while a timer, download and developer preview are active;
   no stranded actor, overlay hook or D-Bus name should remain.
 
+## Privacy indicators
+
+- [ ] Start microphone capture and confirm the orange dot. Toggle system mute
+  and stop capture to verify that the status updates.
+- [ ] Start a PipeWire camera preview and confirm the green dot. Use the
+  camera and microphone together and check that the expanded summary lists both.
+- [ ] On Fedora, enable **Settings → Privacy & Security → Location →
+  Automatic Device Location**, then run the GeoClue demo:
+
+  ```bash
+  sudo dnf install geoclue2-demos
+  /usr/libexec/geoclue-2.0/demos/where-am-i
+  ```
+
+  Look for Nova's blue arrow while GNOME reports location activity. Press
+  Ctrl+C to stop the demo and check that the arrow clears. If GeoClue reports
+  `Geolocation disabled for UID`, check the GNOME setting before retrying.
+- [ ] Share a window from a Wayland browser call. Check that Nova's sharing
+  icon follows GNOME's sharing indicator when you start and stop.
+- [ ] Toggle **Appearance → Privacy indicators** during capture and confirm
+  Nova's indicators clear and return while GNOME's indicators remain visible.
+
+The maintainer confirmed microphone, camera, and location on Fedora 45 with
+GNOME Shell 51.1. An isolated GNOME Shell 51.1 smoke test exercised the layout
+with simulated activity, including screen sharing, and checked signal cleanup.
+
 ## Resource checks
 
 - [ ] Compare GNOME Shell CPU and memory at idle with Nova off/on.
