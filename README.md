@@ -108,8 +108,8 @@ See the [release notes](docs/releases/v0.6.0.md),
 - Default compact clock with local time and weekday; expanded month-view calendar with navigation.
 - Music card only while a compatible MPRIS player reports `Playing`; pauses and stops return to the clock.
 - Floating-panel mode removes GNOME's top bar background but retains left/right controls.
-- A rounded black expanded media card, styled independently of custom GNOME themes.
-- Album art for MPRIS `mpris:artUrl` (local files or bounded HTTPS downloads), with fallback music icons.
+- Expanded media card with large album art or video thumbnails beside the title and playback controls.
+- Player-provided artwork through MPRIS `mpris:artUrl` (local files or bounded HTTPS downloads), with a music icon fallback.
 - Animated playback bars in both compact and expanded media views; a decorative activity indicator rather than a live audio spectrum.
 - Gentle cross-fades as Nova morphs from the calendar to music and back.
 - Play/pause, previous and next buttons (when the player supports them).
@@ -170,6 +170,12 @@ rm -r "$HOME/.local/share/gnome-shell/extensions/nova@tobiasguta.github.io"
 Nova reads `mpris:artUrl` only while an MPRIS client reports active playback. Local cover files load directly. Remote covers use HTTPS only (no redirects, IP literals, localhost, custom ports, or HTTP), with an 8-second timeout and 2 MB data limit. A small in-memory cache is released when Nova is disabled; no disk cache is created.
 
 Remote cover images do cause HTTPS requests to the provider's image server. If artwork is missing or unsupported, Nova falls back to a note icon.
+
+On current `main`, expanding the capsule during playback gives artwork a
+100 × 100 area on the left, with the title, artist or channel, and controls
+on the right. Wide thumbnails keep their original proportions and blend into
+the capsule background. The compact capsule still shows a small thumbnail.
+The v0.7.0 release ZIP has the earlier media layout.
 
 The four moving bars are a **synthetic playback animation**, not a live waveform. Nova does not capture or inspect audio.
 

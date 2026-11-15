@@ -12,6 +12,13 @@ release, test with the current Fedora/GNOME version and record the results.
 - [ ] Editing the custom accent returns the theme selection to Custom.
 - [ ] GNOME reduced-motion setting eliminates decorative animations.
 - [ ] Disable visualizer while music plays; bars stop immediately.
+- [ ] Play a track with square album art and a video with a wide thumbnail.
+  The compact capsule should keep its small thumbnail. The expanded card
+  should show larger artwork on the left, with wide thumbnails centered at
+  their original proportions against the capsule background.
+- [ ] At the minimum expanded width, verify that long media titles and
+  artist names truncate cleanly and playback controls stay visible. Play
+  media without artwork and confirm the music icon appears.
 - [ ] Shortcut disabled: no binding. Enable either preset, toggle twice,
   then disable extension and confirm the shortcut no longer responds.
 

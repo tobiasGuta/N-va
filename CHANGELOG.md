@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Enlarge artwork in the expanded media card and place the title and playback
+  controls beside it. Wide video thumbnails retain their proportions and
+  blend into the capsule background.
 - Show critical alerts such as an almost-empty battery through GNOME's
   banner only. They remain in notification history while GNOME retains them.
 - Open recent GNOME notifications from a bell button in the expanded capsule.
@@ -15,6 +18,8 @@
 - Verified microphone, camera, and location on Fedora 45 with GNOME Shell 51.1.
 - Verified the notification history, dismissal controls, and rounded corners
   on Fedora 45 with GNOME Shell 51.1.
+- Verified the expanded media card with a YouTube video on Fedora 45 with
+  GNOME Shell 51.1.
 
 ## v0.7.0 — Rich notification previews (Fedora-tested)
 
