@@ -76,8 +76,10 @@ Do not include sensitive message content in screenshots.
    newest-first order, with the app name, title, message, and time.
 2. Send another notification with the list open. The list should update without
    closing, and GNOME should handle the banner according to its own settings.
-3. Dismiss a notification from GNOME or have the app withdraw it. Confirm it
-   disappears from Nova. Clear the list in GNOME to check the empty state.
+3. Select the × next to a notification in Nova. Confirm it disappears from
+   both Nova and GNOME, and that the other notifications are still present.
+   Dismiss another from GNOME and confirm it disappears from Nova too. Dismiss
+   the last notification to check the empty state.
 4. Send enough notifications to scroll. Use keyboard focus and scroll
    controls, then press Escape or use the back button to return to Nova.
 5. Lock the session or disable Nova with history open. Reopen Nova and check

@@ -208,8 +208,9 @@ retains, newest first. The scrollable list shows the app, title, message, and
 time. Use the back button or Escape to return. This view remains available when
 Nova's notification previews are off.
 
-Dismiss a notification in GNOME to remove it from the list. Nova keeps no
-separate archive. The v0.7.0 release ZIP predates this view.
+Select the × on a row to dismiss that notification from Nova and GNOME.
+Dismissing it in GNOME also removes it from Nova. The v0.7.0 release ZIP
+predates this view.
 See the [notification testing guide](docs/NOTIFICATIONS.md#notification-history).
 
 ## Privacy indicators

@@ -1395,31 +1395,51 @@ export default class NovaExtension extends Extension {
     }
 
     _renderNotificationHistory(records) {
+        const focused = global.stage.get_key_focus();
+        const focusIndex = focused
+            ? this._historyRows.get_children().findIndex(row => row.contains(focused))
+            : -1;
         this._historyRows.destroy_all_children();
         if (!records.length) {
             this._historyRows.add_child(label('No notifications', 'nova-history-meta'));
+            if (focusIndex >= 0)
+                this._historyBack.grab_key_focus();
             return;
         }
 
         const formatTime = new Intl.DateTimeFormat(undefined, {
             month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
         });
-        for (const {appName, title, detail, timestamp} of records) {
+        for (const {appName, title, detail, timestamp, dismiss} of records) {
             const row = new St.BoxLayout({
-                orientation: Clutter.Orientation.VERTICAL,
                 style_class: 'nova-history-row',
+            });
+            const text = new St.BoxLayout({
+                orientation: Clutter.Orientation.VERTICAL,
+                style: 'spacing: 3px;',
+                x_expand: true,
             });
             const time = timestamp === null ? '' : formatTime.format(timestamp);
             const metadata = time ? `${appName} · ${time}` : appName;
-            row.add_child(label(metadata, 'nova-history-meta'));
-            row.add_child(label(title, 'nova-history-notification-title'));
+            text.add_child(label(metadata, 'nova-history-meta'));
+            text.add_child(label(title, 'nova-history-notification-title'));
             if (detail)
-                row.add_child(label(detail, 'nova-history-body'));
-            for (const child of row.get_children()) {
+                text.add_child(label(detail, 'nova-history-body'));
+            for (const child of text.get_children()) {
                 child.clutter_text.line_wrap = true;
                 child.clutter_text.line_wrap_mode = Pango.WrapMode.WORD_CHAR;
             }
+            row.add_child(text);
+            const button = controlButton('window-close-symbolic', `Dismiss notification: ${title}`, dismiss);
+            button.width = 24;
+            button.height = 24;
+            button.y_align = Clutter.ActorAlign.START;
+            row.add_child(button);
             this._historyRows.add_child(row);
+        }
+        if (focusIndex >= 0) {
+            const row = this._historyRows.get_child_at_index(Math.min(focusIndex, records.length - 1));
+            row.get_last_child().grab_key_focus();
         }
     }
 
