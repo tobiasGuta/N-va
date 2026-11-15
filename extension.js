@@ -17,6 +17,7 @@ import {ActivityMonitor} from './lib/activity-monitor.js';
 import {PrivacyMonitor} from './lib/privacy-monitor.js';
 import {LiveActivityService} from './lib/live-activity.js';
 import {NotificationQueue} from './lib/notification-preview.js';
+import {NotificationHistory} from './lib/notification-history.js';
 import {osdPreview} from './lib/osd-utils.js';
 import {percentage, remainingSeconds, durationLabel} from './lib/activity-utils.js';
 import {activeMode, compactClock, fullClock, longDate, monthCells, monthLabel, weekdayLabels} from './lib/clock.js';
@@ -110,6 +111,11 @@ export default class NovaExtension extends Extension {
         this._activityExpireSource = 0;
         this._transient = null;
         this._notificationQueue = new NotificationQueue(6);
+        this._historyOpen = false;
+        this._historyReturnButton = null;
+        this._historySessionId = 0;
+        this._notificationHistory = new NotificationHistory(Main.messageTray,
+            records => this._renderNotificationHistory(records));
         this._recording = false;
         this._recordingStart = 0;
         this._presentedMode = 'clock';
@@ -349,6 +355,7 @@ export default class NovaExtension extends Extension {
 
         this._pinButton = this._makePinButton();
         header.add_child(this._pinButton);
+        header.add_child(this._makeHistoryButton());
         header.add_child(this._makeSettingsButton());
         header.add_child(this._makeCloseButton());
         this._musicView.add_child(header);
@@ -412,6 +419,7 @@ export default class NovaExtension extends Extension {
         this._expandedView.add_child(this._calendarView);
         this._activityView = this._buildActivityView();
         this._expandedView.add_child(this._activityView);
+        this._expandedView.add_child(this._buildNotificationHistory());
         this._privacyLabel = label('', 'nova-privacy-label');
         this._privacyLabel.style = 'color: #e5e7eb; font-size: 10px;';
         this._privacyLabel.x_expand = true;
@@ -428,6 +436,8 @@ export default class NovaExtension extends Extension {
             this._syncWave();
             if (!this._island.visible)
                 this._notificationQueue.clear();
+            if (!this._island.visible && this._historyOpen)
+                this._setExpanded(false);
         });
         this._island.connect('notify::hover', () => {
             if (this._island.hover) {
@@ -574,7 +584,7 @@ export default class NovaExtension extends Extension {
             return false;
         // Leave GNOME's OSD available when chrome is hidden in fullscreen
         // or the session is locked; otherwise the user may see no feedback.
-        if (!this._island.visible ||
+        if (!this._island.visible || this._historyOpen ||
             Main.sessionMode?.isLocked)
             return false;
         // GNOME 49+ showAll(icon,label,level,max) or
@@ -765,7 +775,7 @@ export default class NovaExtension extends Extension {
     }
 
     _refreshPresentation(animate = false) {
-        if (!this._island)
+        if (!this._island || this._historyOpen)
             return;
         const activity = this._currentActivity();
         const playing = this._displayMode === 'music';
@@ -934,7 +944,8 @@ export default class NovaExtension extends Extension {
     }
 
     _queueNotification(activity) {
-        if (!this._island || !this._settings?.get_boolean('show-notifications') ||
+        if (!this._island || this._historyOpen ||
+            !this._settings?.get_boolean('show-notifications') ||
             !this._island.visible || Main.sessionMode?.isLocked)
             return false;
         if (this._transient) {
@@ -977,7 +988,7 @@ export default class NovaExtension extends Extension {
                     this._notificationQueue.clear();
                 }
                 this._refreshPresentation(true);
-                if (!this._pinned && !this._island.hover &&
+                if (!this._pinned && !this._historyOpen && !this._island.hover &&
                     !this._recording && !this._timerTarget)
                     this._setExpanded(false);
                 return GLib.SOURCE_REMOVE;
@@ -1090,6 +1101,7 @@ export default class NovaExtension extends Extension {
         header.add_child(this._notificationCount);
         this._activityPin = this._makePinButton();
         header.add_child(this._activityPin);
+        header.add_child(this._makeHistoryButton());
         header.add_child(this._makeCloseButton());
         view.add_child(header);
 
@@ -1175,6 +1187,7 @@ export default class NovaExtension extends Extension {
 
     _syncWave() {
         const enabled = this._displayMode === 'music' &&
+            !this._historyOpen &&
             this._settings?.get_boolean('show-media-visualizer') &&
             this._island?.visible !== false &&
             !Main.sessionMode?.isLocked &&
@@ -1284,6 +1297,132 @@ export default class NovaExtension extends Extension {
         return button;
     }
 
+    _makeHistoryButton() {
+        const button = controlButton('preferences-system-notifications-symbolic',
+            'Open notification history', () => this._openNotificationHistory(button));
+        button.width = 25;
+        button.height = 25;
+        return button;
+    }
+
+    _buildNotificationHistory() {
+        this._historyView = new St.BoxLayout({
+            orientation: Clutter.Orientation.VERTICAL,
+            style: 'spacing: 8px;',
+            y_expand: true,
+            visible: false,
+        });
+        const header = new St.BoxLayout({style: 'spacing: 6px;'});
+        this._historyBack = controlButton('go-previous-symbolic', 'Back to Nova',
+            () => this._closeNotificationHistory(true));
+        header.add_child(this._historyBack);
+        const title = label('Notifications', 'nova-history-title');
+        title.x_expand = true;
+        header.add_child(title);
+        header.add_child(this._makeCloseButton());
+        this._historyView.add_child(header);
+
+        this._historyScroll = new St.ScrollView({
+            style_class: 'nova-history-scroll',
+            hscrollbar_policy: St.PolicyType.NEVER,
+            vscrollbar_policy: St.PolicyType.AUTOMATIC,
+            can_focus: true,
+            reactive: true,
+            y_expand: true,
+        });
+        this._historyScroll.set_accessible_name('Recent notifications');
+        this._historyRows = new St.BoxLayout({
+            orientation: Clutter.Orientation.VERTICAL,
+            style: 'spacing: 6px;',
+        });
+        this._historyScroll.set_child(this._historyRows);
+        this._historyView.add_child(this._historyScroll);
+        this._historyView.connect('key-press-event', (_actor, event) => {
+            if (event.get_key_symbol() !== Clutter.KEY_Escape)
+                return Clutter.EVENT_PROPAGATE;
+            this._closeNotificationHistory(true);
+            return Clutter.EVENT_STOP;
+        });
+        return this._historyView;
+    }
+
+    _openNotificationHistory(button) {
+        if (this._historyOpen || !this._island.visible || Main.sessionMode.isLocked)
+            return;
+
+        this._cancelCollapse();
+        this._historyReturnButton = button;
+        this._historyOpen = true;
+        this._musicView.hide();
+        this._calendarView.hide();
+        this._activityView.hide();
+        this._stopWave();
+        this._historyView.show();
+        this._historySessionId = Main.sessionMode.connect('updated', () => {
+            if (Main.sessionMode.isLocked)
+                this._setExpanded(false);
+        });
+        this._notificationHistory.open();
+        this._historyScroll.vadjustment.value = 0;
+        this._position(true);
+        this._historyBack.grab_key_focus();
+    }
+
+    _closeNotificationHistory(restorePresentation = false) {
+        if (!this._historyOpen)
+            return;
+        const returnButton = this._historyReturnButton;
+        this._historyOpen = false;
+        this._historyReturnButton = null;
+        Main.sessionMode.disconnect(this._historySessionId);
+        this._historySessionId = 0;
+        this._notificationHistory.close();
+        this._historyView.hide();
+        this._historyRows.destroy_all_children();
+
+        if (restorePresentation) {
+            this._refreshPresentation(false);
+            this._syncWave();
+            this._position(true);
+            const visible = [this._musicView, this._calendarView, this._activityView]
+                .find(view => view.visible);
+            const focus = returnButton?.mapped ? returnButton :
+                visible?.get_first_child()?.get_children().find(child => child.can_focus);
+            focus?.grab_key_focus();
+            if (!this._pinned && !this._island.hover)
+                this._scheduleCollapse();
+        }
+    }
+
+    _renderNotificationHistory(records) {
+        this._historyRows.destroy_all_children();
+        if (!records.length) {
+            this._historyRows.add_child(label('No notifications', 'nova-history-meta'));
+            return;
+        }
+
+        const formatTime = new Intl.DateTimeFormat(undefined, {
+            month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
+        });
+        for (const {appName, title, detail, timestamp} of records) {
+            const row = new St.BoxLayout({
+                orientation: Clutter.Orientation.VERTICAL,
+                style_class: 'nova-history-row',
+            });
+            const time = timestamp === null ? '' : formatTime.format(timestamp);
+            const metadata = time ? `${appName} · ${time}` : appName;
+            row.add_child(label(metadata, 'nova-history-meta'));
+            row.add_child(label(title, 'nova-history-notification-title'));
+            if (detail)
+                row.add_child(label(detail, 'nova-history-body'));
+            for (const child of row.get_children()) {
+                child.clutter_text.line_wrap = true;
+                child.clutter_text.line_wrap_mode = Pango.WrapMode.WORD_CHAR;
+            }
+            this._historyRows.add_child(row);
+        }
+    }
+
     _makeSettingsButton() {
         const button = new St.Button({
             style_class: 'nova-settings',
@@ -1363,6 +1502,7 @@ export default class NovaExtension extends Extension {
 
         this._calendarPin = this._makePinButton();
         top.add_child(this._calendarPin);
+        top.add_child(this._makeHistoryButton());
         top.add_child(this._makeSettingsButton());
         top.add_child(this._makeCloseButton());
         view.add_child(top);
@@ -1478,6 +1618,11 @@ export default class NovaExtension extends Extension {
 
         this._cancelReveal();
         this._expanded = expanded;
+        if (!expanded && this._historyOpen) {
+            this._closeNotificationHistory();
+            this._refreshPresentation(false);
+            this._syncWave();
+        }
         this._compactView.visible = !expanded;
         this._expandedView.visible = expanded;
 
@@ -1534,7 +1679,7 @@ export default class NovaExtension extends Extension {
                 Main.layoutManager.panelBox?.height || COMPACT_HEIGHT + 6,
         };
         const currentActivity = this._currentActivity();
-        const viewMode = currentActivity
+        const viewMode = this._historyOpen ? 'history' : currentActivity
             ? (currentActivity.kind === 'notification' ? 'notification'
                 : Number.isFinite(currentActivity.percent) ? 'activity' : 'activity-simple')
             : this._displayMode;
@@ -1571,6 +1716,8 @@ export default class NovaExtension extends Extension {
 
     _scheduleCollapse() {
         this._cancelCollapse();
+        if (this._historyOpen)
+            return;
         this._collapseSource = GLib.timeout_add(
             GLib.PRIORITY_DEFAULT, COLLAPSE_DELAY_MS, () => {
                 this._collapseSource = 0;
@@ -1591,6 +1738,8 @@ export default class NovaExtension extends Extension {
 
     disable() {
         // Everything attached to GNOME Shell must be cleaned up synchronously.
+        this._closeNotificationHistory();
+        this._notificationHistory = null;
         if (this._clockSource) {
             GLib.Source.remove(this._clockSource);
             this._clockSource = 0;
@@ -1671,6 +1820,10 @@ export default class NovaExtension extends Extension {
         this._notificationSource = null;
         this._notificationCount = null;
         this._notificationQueue = null;
+        this._historyView = null;
+        this._historyBack = null;
+        this._historyScroll = null;
+        this._historyRows = null;
         this._activityIcon = null;
         this._activityStop = null;
         this._activityProgress = null;

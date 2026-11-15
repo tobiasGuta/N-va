@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Open recent GNOME notifications from a bell button in the expanded capsule.
+  The list updates when GNOME adds, updates, or dismisses a notification.
+
 - Show camera, microphone, location, and screen-sharing activity reported by
   GNOME in the capsule, with a text summary when expanded and an Appearance
   preference to disable the indicators.

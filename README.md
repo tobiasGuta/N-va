@@ -201,6 +201,17 @@ gnome-extensions prefs nova@tobiasguta.github.io
 
 Adjust the compact/expanded widths, accent color (hex `#RRGGBB`), animation speed, floating top bar, and individual activity features. The installer now compiles an extension-local GSettings schema. If you install manually, include `prefs.js` and the `schemas/` directory.
 
+## Notification history
+
+Expand Nova and select the bell to see up to 50 notifications GNOME still
+retains, newest first. The scrollable list shows the app, title, message, and
+time. Use the back button or Escape to return. This view remains available when
+Nova's notification previews are off.
+
+Dismiss a notification in GNOME to remove it from the list. Nova keeps no
+separate archive. The v0.7.0 release ZIP predates this view.
+See the [notification testing guide](docs/NOTIFICATIONS.md#notification-history).
+
 ## Privacy indicators
 
 The current source on `main` shows privacy activity at the right edge of the

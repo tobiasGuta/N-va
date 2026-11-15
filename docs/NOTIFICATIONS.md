@@ -69,6 +69,23 @@ Send screenshots of the expanded preview, and note the output of
 `gnome-shell --version` if something behaves differently.
 Do not include sensitive message content in screenshots.
 
+## Notification history
+
+1. Send desktop notifications from two applications, then open Nova's bell.
+   Confirm the list includes notifications that arrived before it opened, in
+   newest-first order, with the app name, title, message, and time.
+2. Send another notification with the list open. The list should update without
+   closing, and GNOME should handle the banner according to its own settings.
+3. Dismiss a notification from GNOME or have the app withdraw it. Confirm it
+   disappears from Nova. Clear the list in GNOME to check the empty state.
+4. Send enough notifications to scroll. Use keyboard focus and scroll
+   controls, then press Escape or use the back button to return to Nova.
+5. Lock the session or disable Nova with history open. Reopen Nova and check
+   that it starts on its regular view.
+
+Nova reads up to 50 entries from GNOME's retained notifications. It does not
+write them to disk.
+
 ## Rollback
 
 From your stable `main` worktree:
