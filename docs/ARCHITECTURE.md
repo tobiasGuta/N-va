@@ -1,10 +1,11 @@
 # Nova architecture
 
 Nova is a GNOME Shell **GJS extension**, not a separate GTK/Electron window.
-A single top-centered `St.Widget` displays one of three view families:
-clock/calendar, MPRIS media, or a temporary activity card. Pure JavaScript
-modules implement time, geometry, artwork URL policy, activity payloads and
-theme resolution; these are covered by Node.js tests.
+A single top-centered `St.Widget` displays the clock/calendar, MPRIS media,
+temporary activity cards, and notification history. An inner widget clips the
+content during resize animations so the outer capsule can paint its full shadow.
+Node.js tests cover the JavaScript modules for time, geometry, artwork URL
+policy, activity payloads, and theme resolution.
 
 ## Main services
 
@@ -15,6 +16,9 @@ theme resolution; these are covered by Node.js tests.
   memory and cancel on disable.
 - `lib/activity-monitor.js`, `lib/downloads.js`: optional GNOME status
   sources and asynchronous XDG Downloads scans.
+- `lib/notification-history.js`: reads GNOME's retained notifications while
+  the history view is open, refreshes the list on Shell events, and dismisses
+  entries through GNOME. Closing the view drops its signal subscriptions.
 - `lib/privacy-monitor.js`: subscribes to existing Shell privacy indicators
   and the microphone mute state. Subscriptions are removed when the feature
   or extension is disabled.

@@ -85,19 +85,22 @@ Do not include sensitive message content in screenshots.
 5. Lock the session or disable Nova with history open. Reopen Nova and check
    that it starts on its regular view.
 
-Nova reads up to 50 entries from GNOME's retained notifications. It does not
-write them to disk.
+Nova reads up to 50 entries from GNOME's retained notifications. GNOME and
+the sending app determine how long each notification stays available.
+Opening history leaves new banners to GNOME.
+
+The maintainer confirmed the history view, row dismissal, and capsule corner
+fix on Fedora 45 with GNOME Shell 51.1. A headless Shell test also covered
+sorting, live updates, scrolling, dismissal, keyboard focus, and cleanup.
 
 ## Rollback
 
-From your stable `main` worktree:
+To return to the release before notification history, download
+`Nova-v0.7.0-GNOME.zip` from the [v0.7.0 release](https://github.com/tobiasGuta/N-va/releases/tag/v0.7.0)
+and run this command in the download directory:
 
 ```bash
-cd ~/N-va
-git checkout main
-git pull origin main
-bash install.sh
+gnome-extensions install --force Nova-v0.7.0-GNOME.zip
 ```
 
-Log out and back in. To return specifically to v0.6.0, install the ZIP
-from its existing GitHub release and log out/back in.
+Log out and back in to load the release build.

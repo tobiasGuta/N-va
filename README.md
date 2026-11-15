@@ -116,6 +116,7 @@ See the [release notes](docs/releases/v0.6.0.md),
 - Hover to expand; use an icon-only pin button to keep Nova open while using other apps; close to collapse.
 - Countdown timers (5, 15, or 25 minutes) launched from the calendar and shown as live activities.
 - Rich GNOME notification previews with app names, message bodies, available app icons and a bounded FIFO queue; optional Nova-only banners preserve GNOME history and critical alerts.
+- Scrollable [notification history](#notification-history) with individual dismissal.
 - Faster signal-driven volume indicators from GNOME Quick Settings and brightness updates from Mutter.
 - Optional experimental replacement of GNOME’s volume/brightness OSD with Nova’s own overlays, with safe restoration when disabled.
 - GNOME built-in screencast activity with elapsed time.
@@ -209,9 +210,12 @@ time. Use the back button or Escape to return. This view remains available when
 Nova's notification previews are off.
 
 Select the × on a row to dismiss that notification from Nova and GNOME.
-Dismissing it in GNOME also removes it from Nova. The v0.7.0 release ZIP
-predates this view.
-See the [notification testing guide](docs/NOTIFICATIONS.md#notification-history).
+Dismissing it in GNOME also removes it from Nova. Entries stay available for
+as long as GNOME retains them. Nova keeps no separate archive.
+
+Install from the current `main` source to use this feature. The v0.7.0 release
+ZIP predates it. See [installation](#install-on-fedora-gnome) and the
+[notification testing guide](docs/NOTIFICATIONS.md#notification-history).
 
 ## Privacy indicators
 

@@ -5,11 +5,14 @@
 - Open recent GNOME notifications from a bell button in the expanded capsule.
   The list updates when GNOME adds, updates, or dismisses a notification.
   Each row can also dismiss its notification from GNOME.
-
+- Fix the dark square edges at the capsule's rounded corners by keeping the
+  shadow outside the content clip.
 - Show camera, microphone, location, and screen-sharing activity reported by
   GNOME in the capsule, with a text summary when expanded and an Appearance
   preference to disable the indicators.
 - Verified microphone, camera, and location on Fedora 45 with GNOME Shell 51.1.
+- Verified the notification history, dismissal controls, and rounded corners
+  on Fedora 45 with GNOME Shell 51.1.
 
 ## v0.7.0 — Rich notification previews (Fedora-tested)
 
