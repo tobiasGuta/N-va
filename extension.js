@@ -199,11 +199,19 @@ export default class NovaExtension extends Extension {
             reactive: true,
             track_hover: true,
             can_focus: true,
-            clip_to_allocation: true,
             layout_manager: new Clutter.BinLayout(),
             width: COMPACT_WIDTH,
             height: COMPACT_HEIGHT,
         });
+        // Clip the content during resize animations without cutting off the
+        // capsule's shadow at the edges of its rectangular allocation.
+        const contentClip = new St.Widget({
+            clip_to_allocation: true,
+            layout_manager: new Clutter.BinLayout(),
+            x_expand: true,
+            y_expand: true,
+        });
+        this._island.add_child(contentClip);
 
         const compactContent = new St.BoxLayout({
             orientation: Clutter.Orientation.HORIZONTAL,
@@ -429,8 +437,8 @@ export default class NovaExtension extends Extension {
         this._privacyLabel.visible = false;
         this._expandedView.add_child(this._privacyLabel);
 
-        this._island.add_child(this._compactView);
-        this._island.add_child(this._expandedView);
+        contentClip.add_child(this._compactView);
+        contentClip.add_child(this._expandedView);
 
         this._island.connect('notify::visible', () => {
             this._syncWave();
