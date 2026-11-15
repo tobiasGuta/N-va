@@ -19,7 +19,7 @@ test('expanded mode retains the same top anchor and grows downward', () => {
     assert.equal(compact.y, expanded.y);
     assert.equal(compact.x + compact.width / 2,
         expanded.x + expanded.width / 2);
-    assert.equal(expanded.height, 124);
+    assert.equal(expanded.height, 136);
 });
 
 test('respects offset multi-monitor geometry and taller panels', () => {
@@ -33,7 +33,7 @@ test('limits island width on narrow screens', () => {
     const panel = {x: 10, y: 20, width: 280, height: 30};
     const monitor = {x: 10, y: 20, width: 280, height: 500};
     const geometry = getIslandGeometry(panel, monitor, true);
-    assert.deepEqual(geometry, {x: 22, y: 23, width: 256, height: 124});
+    assert.deepEqual(geometry, {x: 22, y: 23, width: 256, height: 136});
 });
 
 test('calendar expands downward without shifting its centered anchor', () => {

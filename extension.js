@@ -26,6 +26,7 @@ const COMPACT_WIDTH = 166;
 const COMPACT_HEIGHT = 32;
 const COLLAPSE_DELAY_MS = 650;
 const WAVE_INTERVAL_MS = 220;
+const MEDIA_ARTWORK_SIZE = 100;
 
 function icon(name, styleClass = 'nova-icon', size = 15, color = '#f7f7f8') {
     return new St.Icon({
@@ -316,35 +317,43 @@ export default class NovaExtension extends Extension {
         });
 
         this._musicView = new St.BoxLayout({
-            orientation: Clutter.Orientation.VERTICAL,
+            orientation: Clutter.Orientation.HORIZONTAL,
             style_class: 'nova-music',
-            style: 'spacing: 11px;',
+            style: 'spacing: 10px;',
             x_expand: true,
             y_expand: true,
             visible: false,
         });
 
-        const header = new St.BoxLayout({
-            orientation: Clutter.Orientation.HORIZONTAL,
-            style_class: 'nova-header',
-            style: 'spacing: 11px;',
-            x_expand: true,
-            y_align: Clutter.ActorAlign.CENTER,
-        });
-
         this._artwork = new St.Bin({
             style_class: 'nova-artwork',
             style: 'background-color: #202a25; border-radius: 11px;',
-            width: 46,
-            height: 46,
+            width: MEDIA_ARTWORK_SIZE,
+            height: MEDIA_ARTWORK_SIZE,
             clip_to_allocation: true,
             x_align: Clutter.ActorAlign.CENTER,
             y_align: Clutter.ActorAlign.CENTER,
         });
-        this._artwork.set_child(icon(
-            'audio-x-generic-symbolic', 'nova-artwork-icon', 23, '#baff80'
-        ));
-        header.add_child(this._artwork);
+        this._musicView.add_child(this._artwork);
+
+        const details = new St.BoxLayout({
+            orientation: Clutter.Orientation.VERTICAL,
+            style: 'spacing: 6px;',
+            x_expand: true,
+            y_align: Clutter.ActorAlign.CENTER,
+        });
+        this._musicView.add_child(details);
+
+        const actions = new St.BoxLayout({
+            style: 'spacing: 3px;',
+            x_align: Clutter.ActorAlign.END,
+        });
+        this._pinButton = this._makePinButton();
+        actions.add_child(this._pinButton);
+        actions.add_child(this._makeHistoryButton());
+        actions.add_child(this._makeSettingsButton());
+        actions.add_child(this._makeCloseButton());
+        details.add_child(actions);
 
         const texts = new St.BoxLayout({
             orientation: Clutter.Orientation.VERTICAL,
@@ -354,30 +363,14 @@ export default class NovaExtension extends Extension {
             y_align: Clutter.ActorAlign.CENTER,
         });
         this._title = label('Nothing playing', 'nova-track-title');
-        this._title.style = 'font-size: 12px; font-weight: 700; color: #f8fafc;';
-        this._artist = label('Start a music player', 'nova-track-artist');
-        this._artist.style = 'font-size: 10px; color: #a6abb4;';
+        this._title.clutter_text.ellipsize = Pango.EllipsizeMode.END;
         texts.add_child(this._title);
-        texts.add_child(this._artist);
-        header.add_child(texts);
 
-        this._pinButton = this._makePinButton();
-        header.add_child(this._pinButton);
-        header.add_child(this._makeHistoryButton());
-        header.add_child(this._makeSettingsButton());
-        header.add_child(this._makeCloseButton());
-        this._musicView.add_child(header);
-
-        const footer = new St.BoxLayout({
-            orientation: Clutter.Orientation.HORIZONTAL,
-            style_class: 'nova-footer',
-            style: 'spacing: 6px;',
-            x_expand: true,
-            y_align: Clutter.ActorAlign.CENTER,
-        });
-        this._badge = label('READY', 'nova-footer-label');
-        this._badge.style = 'font-size: 9px; font-weight: 700; color: #baff80;';
-        footer.add_child(this._badge);
+        const byline = new St.BoxLayout({style: 'spacing: 6px;'});
+        this._artist = label('Start a music player', 'nova-track-artist');
+        this._artist.x_expand = true;
+        this._artist.clutter_text.ellipsize = Pango.EllipsizeMode.END;
+        byline.add_child(this._artist);
         // Matching decorative wave in the expanded player.
         this._waveExpanded = new St.BoxLayout({
             orientation: Clutter.Orientation.HORIZONTAL,
@@ -396,14 +389,15 @@ export default class NovaExtension extends Extension {
             this._waveExpanded.add_child(bar);
             this._waveBars.push(bar);
         }
-        footer.add_child(this._waveExpanded);
+        byline.add_child(this._waveExpanded);
+        texts.add_child(byline);
+        details.add_child(texts);
 
         const controls = new St.BoxLayout({
             orientation: Clutter.Orientation.HORIZONTAL,
             style_class: 'nova-controls',
             style: 'spacing: 9px;',
-            x_expand: true,
-            x_align: Clutter.ActorAlign.END,
+            x_align: Clutter.ActorAlign.START,
         });
         this._previous = controlButton(
             'media-skip-backward-symbolic', 'Previous track',
@@ -420,8 +414,7 @@ export default class NovaExtension extends Extension {
         controls.add_child(this._previous);
         controls.add_child(this._playPause);
         controls.add_child(this._next);
-        footer.add_child(controls);
-        this._musicView.add_child(footer);
+        details.add_child(controls);
         this._expandedView.add_child(this._musicView);
         this._calendarView = this._buildCalendar();
         this._expandedView.add_child(this._calendarView);
@@ -465,9 +458,8 @@ export default class NovaExtension extends Extension {
         this._displayMode = playing ? 'music' : 'clock';
 
         if (playing) {
-            this._title.text = clipped(player.title, 32);
-            this._artist.text = clipped(player.artist, 39);
-            this._badge.text = 'NOW PLAYING';
+            this._title.text = player.title;
+            this._artist.text = player.artist;
         }
         this._updateArt(playing ? player?.artUrl : null);
         this._syncWave();
@@ -568,8 +560,6 @@ export default class NovaExtension extends Extension {
         }
         for (const bar of this._waveBars ?? [])
             bar.style = `background-color: ${accent}; border-radius: 2px;`;
-        if (this._badge)
-            this._badge.style = `font-size: 9px; font-weight: 700; color: ${accent};`;
         if (this._notificationCount)
             this._notificationCount.style =
                 `font-size: 10px; font-weight: 700; color: ${accent};`;
@@ -1154,20 +1144,54 @@ export default class NovaExtension extends Extension {
         this._lastGicon = gicon;
         if (!this._artwork || !this._compactArt)
             return;
-        const picture = (size, fallback) => gicon
+
+        const expandedFallback = icon('audio-x-generic-symbolic',
+            'nova-art-fallback', 34, this._accentColor());
+        this._artwork.set_child(expandedFallback);
+        if (gicon) {
+            const {scale_factor: scale} = St.ThemeContext.get_for_stage(global.stage);
+            const picture = St.TextureCache.get_default().load_gicon(null, gicon,
+                MEDIA_ARTWORK_SIZE, scale, this._artwork.get_resource_scale());
+            if (picture) {
+                picture.request_mode = Clutter.RequestMode.HEIGHT_FOR_WIDTH;
+                picture.content_gravity = Clutter.ContentGravity.RESIZE_FILL;
+                const showPicture = () => {
+                    // The cache gives icon content a square preferred size.
+                    // Use the decoded texture's dimensions for wide thumbnails.
+                    const texture = picture.content?.get_texture();
+                    if (!texture)
+                        return;
+                    const width = texture.get_width();
+                    const height = texture.get_height();
+                    const factor = MEDIA_ARTWORK_SIZE / Math.max(width, height);
+                    picture.set_size(Math.max(1, Math.round(width * factor)),
+                        Math.max(1, Math.round(height * factor)));
+                    expandedFallback.hide();
+                };
+                picture.x_align = picture.y_align = Clutter.ActorAlign.CENTER;
+                const stack = new St.Widget({
+                    layout_manager: new Clutter.BinLayout(),
+                    x_expand: true,
+                    y_expand: true,
+                });
+                this._artwork.set_child(stack);
+                stack.add_child(expandedFallback);
+                stack.add_child(picture);
+                picture.connect('notify::content', showPicture);
+                showPicture();
+            }
+        }
+
+        const fallback = this._displayMode === 'music'
+            ? 'audio-x-generic-symbolic' : 'preferences-system-time-symbolic';
+        this._compactArt.set_child(gicon
             ? new St.Icon({
                 gicon,
-                icon_size: size,
+                icon_size: 15,
                 x_align: Clutter.ActorAlign.CENTER,
                 y_align: Clutter.ActorAlign.CENTER,
             })
-            : icon(fallback, 'nova-art-fallback',
-                size < 20 ? 13 : 23, this._accentColor());
-
-        this._artwork.set_child(picture(44, 'audio-x-generic-symbolic'));
-        const fallback = this._displayMode === 'music'
-            ? 'audio-x-generic-symbolic' : 'preferences-system-time-symbolic';
-        this._compactArt.set_child(picture(15, fallback));
+            : icon(fallback, 'nova-art-fallback', 13, this._accentColor()));
     }
 
     _updateArt(url) {
@@ -1859,7 +1883,6 @@ export default class NovaExtension extends Extension {
         this._activityBarFill = null;
         this._timerRow = null;
         this._settings = null;
-        this._badge = null;
         this._pinButton = null;
         this._lastGicon = null;
         this._transient = null;
