@@ -71,7 +71,8 @@ test('optional native OSD interception is reversible on disable', () => {
 test('normal notifications can be acknowledged after Nova preview, critical alerts stay native', () => {
     const monitor = readFileSync(new URL('../lib/activity-monitor.js', import.meta.url), 'utf8');
     assert.match(monitor, /replace-native-notifications/);
-    assert.match(monitor, /MessageTray\.Urgency\.CRITICAL/);
+    assert.match(monitor,
+        /notification\.urgency === MessageTray\.Urgency\.CRITICAL[^;]+return;\s+const preview = notificationPreview/);
     assert.match(monitor, /notification\.acknowledged = true/);
     assert.doesNotMatch(monitor, /Main\.messageTray\.bannerBlocked = true/);
 });

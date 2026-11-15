@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Show critical alerts such as an almost-empty battery through GNOME's
+  banner only. They remain in notification history while GNOME retains them.
 - Open recent GNOME notifications from a bell button in the expanded capsule.
   The list updates when GNOME adds, updates, or dismisses a notification.
   Each row can also dismiss its notification from GNOME.

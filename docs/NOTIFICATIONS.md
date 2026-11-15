@@ -18,7 +18,8 @@ replace the freedesktop notification daemon or record a second history.
 - Long titles and bodies are abbreviated to fit (up to 90/160 Unicode
   characters before UI layout), and shown as **plain text**, not markup.
 - Ordinary notifications remain in GNOME history. Critical notifications
-  remain native and are not acknowledged by Nova.
+  use GNOME's banner. Current source builds also skip the Nova preview for
+  critical alerts and show them in history while GNOME retains them.
 - Notifications cannot be queued by Nova while its island is hidden or
   the GNOME session is locked. The queue is cleared when hidden and is
   released when Nova is disabled.
@@ -63,7 +64,12 @@ Then try:
 2. Turning **Nova-only notification banners** off and on.
 3. Logging out/in, fullscreen, and the lock screen.
 4. Disabling the extension while notifications are queued.
-5. A critical notification emitted by a test tool, if available.
+5. On current `main`, send a critical alert and verify that only GNOME shows
+   a banner. Check that it appears in Nova's history while GNOME retains it.
+
+   ```bash
+   notify-send -u critical -a Nova-Test 'Critical test' 'GNOME banner only'
+   ```
 
 Send screenshots of the expanded preview, and note the output of
 `gnome-shell --version` if something behaves differently.
