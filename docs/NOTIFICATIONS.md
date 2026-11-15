@@ -17,9 +17,13 @@ replace the freedesktop notification daemon or record a second history.
   banner rather than being acknowledged by Nova.
 - Long titles and bodies are abbreviated to fit (up to 90/160 Unicode
   characters before UI layout), and shown as **plain text**, not markup.
-- Ordinary notifications remain in GNOME history. Critical notifications
-  use GNOME's banner. Current source builds also skip the Nova preview for
-  critical alerts and show them in history while GNOME retains them.
+- With **Nova-only notification banners** enabled, Nova handles ordinary
+  alerts it accepts and GNOME handles the rest. Turning the preference off
+  allows both banners for ordinary alerts.
+- On current `main`, critical alerts such as **Battery Almost Empty** use
+  GNOME's banner regardless of the Nova-only preference. They stay visible
+  in Nova's history for as long as GNOME retains them. This fix is newer
+  than the v0.7.0 release ZIP.
 - Notifications cannot be queued by Nova while its island is hidden or
   the GNOME session is locked. The queue is cleared when hidden and is
   released when Nova is disabled.
@@ -64,10 +68,13 @@ Then try:
 2. Turning **Nova-only notification banners** off and on.
 3. Logging out/in, fullscreen, and the lock screen.
 4. Disabling the extension while notifications are queued.
-5. On current `main`, send a critical alert and verify that only GNOME shows
-   a banner. Check that it appears in Nova's history while GNOME retains it.
+5. On current `main`, enable **Show notifications in Nova** and
+   **Nova-only notification banners**. Send a normal alert and confirm it shows
+   only in Nova. Then send a critical alert and confirm it shows only in GNOME.
+   Open Nova's history and verify both alerts are listed.
 
    ```bash
+   notify-send -u normal -a Nova-Test 'Ordinary test' 'Nova banner only'
    notify-send -u critical -a Nova-Test 'Critical test' 'GNOME banner only'
    ```
 
