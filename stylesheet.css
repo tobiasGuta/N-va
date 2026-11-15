@@ -18,7 +18,7 @@
 .nova-compact-icon { color: #baff80; icon-size: 13px; }
 .nova-status-dot { background-color: #baff80; border-radius: 4px; }
 .nova-expanded { color: #f8fafc; }
-.nova-artwork { background-color: #202a25; border-radius: 11px; }
+.nova-artwork-placeholder { background-color: #202a25; border-radius: 11px; }
 .nova-track-title { color: #f8fafc; font-size: 14px; font-weight: 700; }
 .nova-track-artist { color: #a6abb4; font-size: 11px; }
 .nova-control { background-color: transparent; border-radius: 17px; }

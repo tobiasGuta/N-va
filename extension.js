@@ -327,7 +327,6 @@ export default class NovaExtension extends Extension {
 
         this._artwork = new St.Bin({
             style_class: 'nova-artwork',
-            style: 'background-color: #202a25; border-radius: 11px;',
             width: MEDIA_ARTWORK_SIZE,
             height: MEDIA_ARTWORK_SIZE,
             clip_to_allocation: true,
@@ -1145,9 +1144,13 @@ export default class NovaExtension extends Extension {
         if (!this._artwork || !this._compactArt)
             return;
 
-        const expandedFallback = icon('audio-x-generic-symbolic',
-            'nova-art-fallback', 34, this._accentColor());
-        this._artwork.set_child(expandedFallback);
+        const expandedFallback = new St.Bin({
+            style_class: 'nova-artwork-placeholder',
+            x_expand: true,
+            y_expand: true,
+            child: icon('audio-x-generic-symbolic', 'nova-art-fallback', 34, this._accentColor()),
+        });
+        let artwork = expandedFallback;
         if (gicon) {
             const {scale_factor: scale} = St.ThemeContext.get_for_stage(global.stage);
             const picture = St.TextureCache.get_default().load_gicon(null, gicon,
@@ -1174,13 +1177,14 @@ export default class NovaExtension extends Extension {
                     x_expand: true,
                     y_expand: true,
                 });
-                this._artwork.set_child(stack);
                 stack.add_child(expandedFallback);
                 stack.add_child(picture);
+                artwork = stack;
                 picture.connect('notify::content', showPicture);
                 showPicture();
             }
         }
+        this._artwork.set_child(artwork);
 
         const fallback = this._displayMode === 'music'
             ? 'audio-x-generic-symbolic' : 'preferences-system-time-symbolic';
