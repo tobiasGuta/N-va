@@ -208,6 +208,23 @@ gnome-extensions prefs nova@tobiasguta.github.io
 
 Adjust the compact/expanded widths, accent color (hex `#RRGGBB`), animation speed, floating top bar, and individual activity features. The installer now compiles an extension-local GSettings schema. If you install manually, include `prefs.js` and the `schemas/` directory.
 
+### Hide Top Bar compatibility
+
+**Appearance → Keep Nova visible when the top bar is hidden** is on by
+default in the current source. Nova stays at the top center of the primary
+display as [Hide Top Bar](https://extensions.gnome.org/extension/545/hide-top-bar/)
+hides or reveals GNOME's panel. The compact pill keeps its usual height and
+the expanded capsule opens downward. Nova still hides over fullscreen apps
+on the primary display and returns in Activities. Turn the preference off
+to use the panel's position when Nova lays itself out. The switch takes
+effect immediately.
+
+To reveal the system panel at the screen edge, enable that option in Hide
+Top Bar's own preferences. Hide Top Bar manages its pointer pressure,
+Intellihide, and fullscreen reveal settings. Compatibility depends on Hide
+Top Bar supporting your Shell version. The v0.7.0 release ZIP predates this
+change. See the [test plan](docs/TESTING.md#hide-top-bar-compatibility).
+
 ## Notification history
 
 Expand Nova and select the bell to see up to 50 notifications GNOME still
