@@ -53,6 +53,10 @@ to reproduce hiding without opening a window, then repeat with Intellihide on.
   away from the top edge repeatedly. The panel should slide in and out
   while Nova stays centered. Open Activities and Quick Settings from the
   revealed bar.
+- [ ] Maximize a Wayland app that fills the display while the panel is
+  hidden. Check that Nova stays visible and responds to hover and clicks.
+  This exercises hardware paths such as direct scanout that a virtual
+  display cannot verify.
 - [ ] Hover to expand Nova while the top bar is hidden. Use the calendar
   pin and notification history buttons, then repeat with a media player.
   Keep Nova pinned while revealing and hiding the panel.
