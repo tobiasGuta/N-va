@@ -94,7 +94,7 @@ export default class NovaExtension extends Extension {
         this._playerState = null;
         this._collapseSource = 0;
         this._revealSource = 0;
-        this._monitorChangedId = 0;
+        this._restackLaterId = 0;
         this._clockSource = 0;
         this._monthOffset = 0;
         this._lastDayKey = null;
@@ -136,7 +136,7 @@ export default class NovaExtension extends Extension {
         this._buildUi();
         Main.layoutManager.addChrome(this._island, {
             affectsStruts: false,
-            trackFullscreen: true,
+            trackFullscreen: false,
         });
 
         // The native clock remains intact and returns when Nova is disabled.
@@ -150,12 +150,7 @@ export default class NovaExtension extends Extension {
             'changed', (_settings, key) => this._onSettingChanged(key)
         );
 
-        this._monitorChangedId = Main.layoutManager.connect(
-            'monitors-changed', () => this._position(false)
-        );
-        // Panel is a GJS class, not a Clutter actor with an
-        // 'allocation-changed' signal. Reposition on monitor and mode changes.
-        this._position(false);
+        this._watchIslandPlacement();
 
         this._artLoader = new ArtworkLoader();
         this._media = new MprisService(player => this._showPlayer(player));
@@ -708,7 +703,8 @@ export default class NovaExtension extends Extension {
             this._syncNativeOsd();
         else if (key === 'show-privacy-indicators')
             this._syncPrivacyMonitor();
-        else if (key === 'compact-width' || key === 'expanded-width')
+        else if (key === 'keep-visible-when-panel-hidden' ||
+                 key === 'compact-width' || key === 'expanded-width')
             this._position(false);
         else if (key === 'accent-color' || key === 'theme-preset')
             this._applyAppearance();
@@ -1715,6 +1711,47 @@ export default class NovaExtension extends Extension {
         this._revealSource = 0;
     }
 
+    _watchIslandPlacement() {
+        const layout = Main.layoutManager;
+        const island = this._island;
+        const updateVisibility = () => {
+            const monitor = layout.primaryMonitor;
+            // Match Shell chrome in fullscreen and overview. Use the primary
+            // monitor directly because the actor may still have its old
+            // allocation when GNOME switches the primary display.
+            island.visible = Boolean(monitor) &&
+                !(global.window_group.visible && monitor.inFullscreen);
+        };
+        layout.connectObject('monitors-changed', () => {
+            this._position(false);
+            updateVisibility();
+        }, island);
+        global.display.connectObject('in-fullscreen-changed', updateVisibility, island);
+        global.window_group.connectObject('notify::visible', updateVisibility, island);
+        St.ThemeContext.get_for_stage(global.stage).connectObject(
+            'notify::scale-factor', () => this._position(false), island);
+        Main.panel.connectObject('notify::height', () => {
+            if (Main.panel.get_height() !== this._panelHeight)
+                this._position(false);
+        }, island);
+
+        layout.uiGroup.connectObject('child-added', (_group, child) => {
+            if (child !== layout.panelBox || this._restackLaterId)
+                return;
+            // Hide Top Bar can re-add the panel as chrome. Wait for addChrome
+            // to finish stacking it, then keep Nova above it and below popups.
+            this._restackLaterId = global.compositor.get_laters().add(
+                Meta.LaterType.BEFORE_REDRAW, () => {
+                    this._restackLaterId = 0;
+                    layout.uiGroup.set_child_below_sibling(island, global.top_window_group);
+                    return GLib.SOURCE_REMOVE;
+                });
+        }, island);
+
+        this._position(false);
+        updateVisibility();
+    }
+
     _position(animate) {
         if (!this._island)
             return;
@@ -1723,17 +1760,14 @@ export default class NovaExtension extends Extension {
         if (!monitor)
             return;
 
-        // The compact island must fit *inside* the GNOME top panel rather
-        // than overflowing into the active window below it. Expanded mode
-        // uses the same top-center anchor and grows down from there.
-        const [panelX, panelY] = Main.panel.get_transformed_position();
-        const panel = {
-            x: Number.isFinite(panelX) ? panelX : monitor.x,
-            y: Number.isFinite(panelY) ? panelY : monitor.y,
-            width: Main.panel.get_width() || monitor.width,
-            height: Main.panel.get_height() ||
-                Main.layoutManager.panelBox?.height || COMPACT_HEIGHT + 6,
-        };
+        // Keep the panel's compact height and padding in either placement
+        // mode. Only panel-relative mode reads the panel's position.
+        this._panelHeight = Main.panel.get_height() || Main.layoutManager.panelBox.height;
+        const panel = {height: this._panelHeight};
+        if (!this._settings.get_boolean('keep-visible-when-panel-hidden')) {
+            [panel.x, panel.y] = Main.panel.get_transformed_position();
+            panel.width = Main.panel.get_width();
+        }
         const currentActivity = this._currentActivity();
         const viewMode = this._historyOpen ? 'history' : currentActivity
             ? (currentActivity.kind === 'notification' ? 'notification'
@@ -1826,28 +1860,29 @@ export default class NovaExtension extends Extension {
         this._media?.destroy();
         this._media = null;
 
-        if (this._monitorChangedId) {
-            Main.layoutManager.disconnect(this._monitorChangedId);
-            this._monitorChangedId = 0;
+        if (this._restackLaterId) {
+            global.compositor.get_laters().remove(this._restackLaterId);
+            this._restackLaterId = 0;
         }
 
         if (this._settingsChangedId && this._settings) {
             this._settings.disconnect(this._settingsChangedId);
             this._settingsChangedId = 0;
         }
-        this._restorePanelStyle();
-
-        if (this._clockActor && this._clockWasVisible !== null)
-            this._clockActor.visible = this._clockWasVisible;
-        this._clockActor = null;
-        this._clockWasVisible = null;
 
         if (this._island) {
             this._island.remove_all_transitions();
             Main.layoutManager.removeChrome(this._island);
+            // Destroying the island also disconnects its placement watchers.
             this._island.destroy();
             this._island = null;
         }
+
+        this._restorePanelStyle();
+        if (this._clockActor && this._clockWasVisible !== null)
+            this._clockActor.visible = this._clockWasVisible;
+        this._clockActor = null;
+        this._clockWasVisible = null;
 
         this._compactView = null;
         this._privacyIcons = null;

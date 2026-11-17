@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Keep Nova at the primary display's top center while Hide Top Bar hides
+  or reveals the GNOME panel. A live Appearance preference restores panel-relative
+  placement. Nova still hides over fullscreen apps on the primary display.
 - Enlarge artwork in the expanded media card and place the title and playback
   controls beside it. Wide video thumbnails retain their proportions and
   blend into the capsule background.

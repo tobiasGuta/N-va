@@ -22,6 +22,61 @@ release, test with the current Fedora/GNOME version and record the results.
 - [ ] Shortcut disabled: no binding. Enable either preset, toggle twice,
   then disable extension and confirm the shortcut no longer responds.
 
+## Hide Top Bar compatibility
+
+The Node.js geometry tests cover panel heights, scaled logical sizes, and
+offset monitor origins. The Shell smoke test uses a virtual Wayland display
+and a panel hide/reveal animation. It checks pointer picking for compact and
+expanded Nova, stacking after the panel is re-registered, live preference
+changes, fullscreen, Activities, and cleanup after disabling and re-enabling.
+
+Run the smoke test from the repository root on a system with
+`gnome-shell-test-tool`. It uses temporary settings and an isolated session bus.
+
+```bash
+bash scripts/package.sh
+(
+    nova_test_runtime="$(mktemp -d)"
+    trap 'rmdir "$nova_test_runtime" 2>/dev/null || true' EXIT
+    dbus-run-session -- env -u DISPLAY -u WAYLAND_DISPLAY \
+        XDG_RUNTIME_DIR="$nova_test_runtime" GSK_RENDERER=cairo GTK_A11Y=none \
+        gnome-shell-test-tool --headless --extension "$PWD/dist/Nova-v0.7.0-GNOME.zip" \
+        "$PWD/tests/gnome-top-bar-smoke.mjs"
+)
+```
+
+For a desktop test, install a Hide Top Bar release that supports your Shell
+version. Enable its mouse-at-screen-edge reveal option. Turn off Intellihide
+to reproduce hiding without opening a window, then repeat with Intellihide on.
+
+- [ ] With **Keep Nova visible when the top bar is hidden** on, move to and
+  away from the top edge repeatedly. The panel should slide in and out
+  while Nova stays centered. Open Activities and Quick Settings from the
+  revealed bar.
+- [ ] Maximize a Wayland app that fills the display while the panel is
+  hidden. Check that Nova stays visible and responds to hover and clicks.
+  This exercises hardware paths such as direct scanout that a virtual
+  display cannot verify.
+- [ ] Hover to expand Nova while the top bar is hidden. Use the calendar
+  pin and notification history buttons, then repeat with a media player.
+  Keep Nova pinned while revealing and hiding the panel.
+- [ ] Switch to panel-relative placement in Nova Preferences while the
+  panel is hidden, then switch back. Nova should return to the top center
+  as soon as independent placement is enabled.
+- [ ] Switch the primary display to an offset monitor and try 100%, 125%
+  and 200% scaling where available. Try fullscreen on each monitor.
+  Nova should hide when fullscreen covers its primary display and return
+  in Activities and after leaving fullscreen.
+- [ ] Toggle both extensions in each order. Disabling Nova should restore
+  the native clock and panel styling while Hide Top Bar can still hide and
+  reveal the panel. Re-enable Nova and check that its controls respond.
+
+The Shell smoke test passed on Fedora 45 with GNOME Shell 51.1. Isolated runs
+with Hide Top Bar v129 also verified pressure reveal, autohide, Nova's hover
+and pin controls, and switching to an offset primary virtual display at
+125% scale. Physical displays, real pointer hardware, and Shell 49 and 50
+remain to be tested.
+
 ## Linux-specific tests
 
 - [ ] MPRIS starts/stops in Firefox/Spotify/VLC as available.

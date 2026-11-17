@@ -61,3 +61,44 @@ test('non-progress activity cards are shorter than percentage OSD cards', () => 
     assert.equal(percent.height, 124);
     assert.equal(simple.x + simple.width / 2, percent.x + percent.width / 2);
 });
+
+test('monitor anchoring matches a standard panel in every presentation', () => {
+    const monitor = {x: 1280, y: 96, width: 1920, height: 1080};
+    const panel = {...monitor, height: 32};
+    for (const mode of ['clock', 'music', 'activity', 'activity-simple', 'notification', 'history']) {
+        for (const expanded of [false, true]) {
+            assert.deepEqual(
+                getIslandGeometry({height: panel.height}, monitor, expanded, mode),
+                getIslandGeometry(panel, monitor, expanded, mode)
+            );
+        }
+    }
+});
+
+test('monitor anchoring uses logical coordinates and the current panel height', () => {
+    // A 2880px-wide output takes 2880, 2304 or 1440 logical units at
+    // 100%, 125% or 200%, respectively. Primary display origins can change.
+    for (const {x, y, width, scale, panelHeight, compactHeight, inset} of [
+        {x: 0, y: 0, width: 2880, scale: 1, panelHeight: 28, compactHeight: 22, inset: 3},
+        {x: 640, y: 480, width: 2304, scale: 1.25, panelHeight: 34, compactHeight: 26, inset: 4},
+        {x: 1920, y: 72, width: 1440, scale: 2, panelHeight: 44, compactHeight: 32, inset: 6},
+    ]) {
+        const primary = {x, y, width, geometry_scale: scale};
+        const panel = {height: panelHeight};
+        assert.deepEqual(getIslandGeometry(panel, primary), {
+            x: x + width / 2 - 83, y: y + inset, width: 166, height: compactHeight,
+        });
+        assert.deepEqual(getIslandGeometry(panel, primary, true, 'clock'), {
+            x: x + width / 2 - 164, y: y + inset, width: 328, height: 354,
+        });
+    }
+});
+
+test('panel-relative placement still accepts translated panel coordinates', () => {
+    const primary = {x: 1280, y: 96, width: 1920, height: 1080};
+    const panel = {x: 1300, y: 68, width: 1600, height: 28};
+    const compact = getIslandGeometry(panel, primary);
+    const expanded = getIslandGeometry(panel, primary, true, 'clock');
+    assert.deepEqual(compact, {x: 2017, y: 71, width: 166, height: 22});
+    assert.deepEqual(expanded, {x: 1936, y: 71, width: 328, height: 354});
+});

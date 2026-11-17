@@ -18,13 +18,15 @@ export default class NovaPreferences extends ExtensionPreferences {
 
         const appearance = new Adw.PreferencesGroup({
             title: 'Appearance',
-            description: 'Changes apply immediately. Restart GNOME Shell if another extension overrides the panel.',
+            description: 'Changes apply immediately.',
         });
         page.add(appearance);
 
         const toggles = [
             [appearance, 'floating-panel', 'Transparent top panel',
                 'Keep system icons visible while removing the panel background'],
+            [appearance, 'keep-visible-when-panel-hidden', 'Keep Nova visible when the top bar is hidden',
+                'Anchor Nova to the top center of the primary display'],
             [appearance, 'show-privacy-indicators', 'Privacy indicators',
                 'Show camera, microphone, location, and screen sharing activity reported by GNOME'],
         ];

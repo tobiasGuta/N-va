@@ -2,6 +2,11 @@
 <schemalist>
   <schema id="org.gnome.shell.extensions.nova" path="/org/gnome/shell/extensions/nova/">
     <key name="floating-panel" type="b"><default>true</default><summary>Transparent GNOME top panel</summary></key>
+    <key name="keep-visible-when-panel-hidden" type="b">
+      <default>true</default>
+      <summary>Keep Nova visible when the top bar is hidden</summary>
+      <description>Anchor Nova to the primary display independently of the GNOME panel position.</description>
+    </key>
     <key name="compact-width" type="i"><default>166</default><range min="132" max="240"/></key>
     <key name="expanded-width" type="i"><default>328</default><range min="300" max="430"/></key>
     <key name="animation-duration" type="i"><default>240</default><range min="100" max="500"/></key>
